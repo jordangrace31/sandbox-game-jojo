@@ -1,0 +1,26 @@
+{
+  "name": "sandbox-game-jojo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jordangrace31/sandbox-game-jojo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jordangrace31/sandbox-game-jojo/issues"
+  },
+  "homepage": "https://github.com/jordangrace31/sandbox-game-jojo#readme",
+  "description": "",
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.10"
+  }
+}
