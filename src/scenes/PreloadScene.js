@@ -17,7 +17,8 @@ export default class PreloadScene extends Phaser.Scene {
     // Load player sprite atlases
     this.loadPlayerAssets();
     
-    // Future: Load NPC assets, backgrounds, audio, etc.
+    // Load NPC assets
+    this.loadNPCAssets();
   }
 
   create() {
@@ -80,6 +81,23 @@ export default class PreloadScene extends Phaser.Scene {
       'jojo_boy_idle',
       'assets/images/jojo_boy_idle.png',
       'assets/atlases/jojo_boy_idle.json'
+    );
+  }
+
+  /**
+   * Load all NPC-related assets
+   */
+  loadNPCAssets() {
+    this.load.atlas(
+      'jojo_girl_walk',
+      'assets/images/jojo_girl_walk.png',
+      'assets/atlases/jojo_girl_walk.json'
+    );
+
+    this.load.atlas(
+      'jojo_girl_run',
+      'assets/images/jojo_girl_run.png',
+      'assets/atlases/jojo_girl_run.json'
     );
   }
 }

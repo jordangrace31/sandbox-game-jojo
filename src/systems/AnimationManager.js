@@ -20,6 +20,14 @@ export default class AnimationManager {
   }
 
   /**
+   * Create all NPC animations
+   */
+  createNPCAnimations() {
+    this.createGirlWalkAnimations();
+    this.createGirlRunAnimations();
+  }
+
+  /**
    * Create walking animations for all four directions
    */
   createWalkAnimations() {
@@ -77,6 +85,48 @@ export default class AnimationManager {
           end: 1
         }),
         frameRate: ANIMATION_CONFIG.idleFrameRate,
+        repeat: -1
+      });
+    });
+  }
+
+  /**
+   * Create girl NPC walking animations for all four directions
+   */
+  createGirlWalkAnimations() {
+    const directions = ['down', 'up', 'left', 'right'];
+    const prefixes = ['front', 'back', 'left', 'right'];
+
+    directions.forEach((direction, index) => {
+      this.scene.anims.create({
+        key: `girl_walk_${direction}`,
+        frames: this.scene.anims.generateFrameNames('jojo_girl_walk', {
+          prefix: `jojo_girl_${prefixes[index]}_`,
+          start: 0,
+          end: 8
+        }),
+        frameRate: ANIMATION_CONFIG.walkFrameRate,
+        repeat: -1
+      });
+    });
+  }
+
+  /**
+   * Create girl NPC running animations for all four directions
+   */
+  createGirlRunAnimations() {
+    const directions = ['down', 'up', 'left', 'right'];
+    const prefixes = ['front', 'back', 'left', 'right'];
+
+    directions.forEach((direction, index) => {
+      this.scene.anims.create({
+        key: `girl_run_${direction}`,
+        frames: this.scene.anims.generateFrameNames('jojo_girl_run', {
+          prefix: `jojo_girl_${prefixes[index]}_`,
+          start: 0,
+          end: 7
+        }),
+        frameRate: ANIMATION_CONFIG.walkFrameRate + 2, // Slightly faster
         repeat: -1
       });
     });

@@ -4,6 +4,17 @@
  */
 
 export const NPC_DATA = {
+  jojoGirl: {
+    name: "Luna",
+    dialogues: [
+      "Hey there! Welcome to the left side of the world!",
+      "I love exploring this way. The scenery is so peaceful.",
+      "Keep walking and you'll discover so much more!",
+      "Have you seen how beautiful the clouds look from here?"
+    ],
+    quests: []
+  },
+  
   villager1: {
     name: "Sarah",
     dialogues: [

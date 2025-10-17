@@ -20,8 +20,8 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
     this.quests = npcData.quests || [];
     
     // Physics
-    this.setImmovable(true);
-    this.body.setAllowGravity(false);
+    this.setImmovable(false);
+    this.body.setAllowGravity(true);
     
     // Interaction
     this.canInteract = true;
@@ -63,7 +63,7 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
     // Return dialogue or quest data
     return {
       name: this.name,
-      dialogue: this.getNextDialogue(),
+      dialogues: this.dialogues,
       quest: this.getAvailableQuest()
     };
   }
