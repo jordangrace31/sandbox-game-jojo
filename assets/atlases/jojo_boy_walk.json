@@ -1,0 +1,52 @@
+{
+    "frames": {
+      "jojo_boy_back_0": { "frame": { "x": 0, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_1": { "frame": { "x": 64, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_2": { "frame": { "x": 128, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_3": { "frame": { "x": 192, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_4": { "frame": { "x": 256, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_5": { "frame": { "x": 320, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_6": { "frame": { "x": 384, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_7": { "frame": { "x": 448, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_8": { "frame": { "x": 512, "y": 0, "w": 64, "h": 64 } },
+  
+      "jojo_boy_left_0": { "frame": { "x": 0, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_1": { "frame": { "x": 64, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_2": { "frame": { "x": 128, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_3": { "frame": { "x": 192, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_4": { "frame": { "x": 256, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_5": { "frame": { "x": 320, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_6": { "frame": { "x": 384, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_7": { "frame": { "x": 448, "y": 64, "w": 64, "h": 64 } },
+      "jojo_boy_left_8": { "frame": { "x": 512, "y": 64, "w": 64, "h": 64 } },
+  
+      "jojo_boy_front_0": { "frame": { "x": 0, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_1": { "frame": { "x": 64, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_2": { "frame": { "x": 128, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_3": { "frame": { "x": 192, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_4": { "frame": { "x": 256, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_5": { "frame": { "x": 320, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_6": { "frame": { "x": 384, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_7": { "frame": { "x": 448, "y": 128, "w": 64, "h": 64 } },
+      "jojo_boy_front_8": { "frame": { "x": 512, "y": 128, "w": 64, "h": 64 } },
+  
+      "jojo_boy_right_0": { "frame": { "x": 0, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_1": { "frame": { "x": 64, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_2": { "frame": { "x": 128, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_3": { "frame": { "x": 192, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_4": { "frame": { "x": 256, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_5": { "frame": { "x": 320, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_6": { "frame": { "x": 384, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_7": { "frame": { "x": 448, "y": 192, "w": 64, "h": 64 } },
+      "jojo_boy_right_8": { "frame": { "x": 512, "y": 192, "w": 64, "h": 64 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "jojo_boy_walk.png",
+      "format": "RGBA8888",
+      "size": { "w": 576, "h": 256 },
+      "scale": "1"
+    }
+  }
+  
