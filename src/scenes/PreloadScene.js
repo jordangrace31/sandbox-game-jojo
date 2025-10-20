@@ -99,6 +99,12 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/jojo_girl_run.png',
       'assets/atlases/jojo_girl_run.json'
     );
+
+    this.load.atlas(
+      'jojo_girl_idle',
+      'assets/images/jojo_girl_idle.png',
+      'assets/atlases/jojo_girl_idle.json'
+    );
   }
 }
 

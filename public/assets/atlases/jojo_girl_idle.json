@@ -1,0 +1,23 @@
+{
+    "frames": {
+      "jojo_girl_back_0": { "frame": { "x": 0, "y": 0, "w": 64, "h": 64 } },
+      "jojo_girl_back_1": { "frame": { "x": 64, "y": 0, "w": 64, "h": 64 } },
+  
+      "jojo_girl_left_0": { "frame": { "x": 0, "y": 64, "w": 64, "h": 64 } },
+      "jojo_girl_left_1": { "frame": { "x": 64, "y": 64, "w": 64, "h": 64 } },
+  
+      "jojo_girl_front_0": { "frame": { "x": 0, "y": 128, "w": 64, "h": 64 } },
+      "jojo_girl_front_1": { "frame": { "x": 64, "y": 128, "w": 64, "h": 64 } },
+  
+      "jojo_girl_right_0": { "frame": { "x": 0, "y": 192, "w": 64, "h": 64 } },
+      "jojo_girl_right_1": { "frame": { "x": 64, "y": 192, "w": 64, "h": 64 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "jojo_girl_idle.png",
+      "format": "RGBA8888",
+      "size": { "w": 128, "h": 256 },
+      "scale": "1"
+    }
+  }

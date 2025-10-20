@@ -25,6 +25,7 @@ export default class AnimationManager {
   createNPCAnimations() {
     this.createGirlWalkAnimations();
     this.createGirlRunAnimations();
+    this.createGirlIdleAnimations();
   }
 
   /**
@@ -127,6 +128,27 @@ export default class AnimationManager {
           end: 7
         }),
         frameRate: ANIMATION_CONFIG.walkFrameRate + 2, // Slightly faster
+        repeat: -1
+      });
+    });
+  }
+
+  /**
+   * Create girl NPC idle animations for all four directions
+   */
+  createGirlIdleAnimations() {
+    const directions = ['down', 'up', 'left', 'right'];
+    const prefixes = ['front', 'back', 'left', 'right'];
+
+    directions.forEach((direction, index) => {
+      this.scene.anims.create({
+        key: `girl_idle_${direction}`,
+        frames: this.scene.anims.generateFrameNames('jojo_girl_idle', {
+          prefix: `jojo_girl_${prefixes[index]}_`,
+          start: 0,
+          end: 1
+        }),
+        frameRate: ANIMATION_CONFIG.idleFrameRate,
         repeat: -1
       });
     });

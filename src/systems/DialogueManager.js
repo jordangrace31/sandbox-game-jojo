@@ -10,6 +10,9 @@ export default class DialogueManager {
     this.isActive = false;
     this.currentDialogue = null;
     this.dialogueBox = null;
+    this.enterKey = scene.input.keyboard.addKey('ENTER');
+    this.dialogueList = [];
+    this.currentDialogueIndex = 0;
   }
 
   /**
@@ -17,9 +20,20 @@ export default class DialogueManager {
    */
   startDialogue(npcName, dialogueText) {
     this.isActive = true;
+    
+    // If dialogueText is a string, convert to array
+    if (typeof dialogueText === 'string') {
+      this.dialogueList = [dialogueText];
+    } else if (Array.isArray(dialogueText)) {
+      this.dialogueList = dialogueText;
+    } else {
+      this.dialogueList = [dialogueText];
+    }
+    
+    this.currentDialogueIndex = 0;
     this.currentDialogue = {
       npcName: npcName,
-      text: dialogueText
+      text: this.dialogueList[0]
     };
     
     this.showDialogueBox();
@@ -71,11 +85,16 @@ export default class DialogueManager {
       }
     );
     
-    // Prompt to continue
+    // Prompt to continue with progress indicator
+    const progress = `${this.currentDialogueIndex + 1}/${this.dialogueList.length}`;
+    const promptMessage = this.currentDialogueIndex < this.dialogueList.length - 1 
+      ? `Press ENTER (${progress})` 
+      : `Press ENTER to close`;
+    
     const promptText = this.scene.add.text(
-      width - 150,
+      width - 200,
       height - 35,
-      'Press SPACE',
+      promptMessage,
       {
         fontSize: '14px',
         fill: '#aaaaaa'
@@ -84,6 +103,7 @@ export default class DialogueManager {
     
     this.dialogueBox.add([box, nameText, dialogueText, promptText]);
     this.dialogueBox.setDepth(1000); // Ensure it's on top
+    this.dialogueBox.setScrollFactor(0); // Fixed to camera, not world
   }
 
   /**
@@ -107,14 +127,41 @@ export default class DialogueManager {
   }
 
   /**
+   * Advance to next dialogue or close if finished
+   */
+  nextDialogue() {
+    this.currentDialogueIndex++;
+    
+    if (this.currentDialogueIndex < this.dialogueList.length) {
+      // Show next dialogue
+      this.currentDialogue.text = this.dialogueList[this.currentDialogueIndex];
+      this.updateDialogueBox();
+    } else {
+      // All dialogues shown, close the box
+      this.closeDialogue();
+    }
+  }
+
+  /**
+   * Update the dialogue box text without recreating it
+   */
+  updateDialogueBox() {
+    if (!this.dialogueBox) return;
+    
+    // Destroy old dialogue box and create new one
+    this.dialogueBox.destroy();
+    this.dialogueBox = null;
+    this.showDialogueBox();
+  }
+
+  /**
    * Update dialogue (call in scene's update)
    */
   update() {
     if (this.isActive) {
-      // Listen for space to close dialogue
-      const spaceKey = this.scene.input.keyboard.addKey('SPACE');
-      if (Phaser.Input.Keyboard.JustDown(spaceKey)) {
-        this.closeDialogue();
+      // Listen for enter to advance dialogue
+      if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
+        this.nextDialogue();
       }
     }
   }

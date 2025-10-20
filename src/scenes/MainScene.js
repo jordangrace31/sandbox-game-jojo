@@ -50,6 +50,9 @@ export default class MainScene extends Phaser.Scene {
     
     // Track dialogue index for cycling through dialogues
     this.currentDialogueIndex = 0;
+    
+    // Track if dialog has been completed with Luna
+    this.lunaDialogCompleted = false;
   }
 
   update() {
@@ -67,6 +70,12 @@ export default class MainScene extends Phaser.Scene {
     // Update NPCs
     if (this.lunaGirl) {
       this.lunaGirl.update();
+      
+      // Make Luna follow player after dialog is completed
+      if (this.lunaDialogCompleted) {
+        console.log('Luna dialog completed');
+        this.updateLunaFollowBehavior();
+      }
     }
     
     // Check for NPC interactions
@@ -264,36 +273,17 @@ export default class MainScene extends Phaser.Scene {
   createNPCs() {
     const lunaData = getNPCData('jojoGirl');
     
-    // Position Luna on the left side of the world
-    const lunaX = 200;
+    // Position Luna on the right side of the world
+    const lunaX = WORLD_CONFIG.width - 10000;
     const lunaY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
-    this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_walk', lunaData);
+    this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
     
-    // Make Luna walk back and forth
-    this.lunaGirl.play('girl_walk_right');
+    // Make Luna stand idle initially
+    this.lunaGirl.play('girl_idle_down');
     
     // Add collision with ground
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
-    
-    // Set up a simple walking pattern
-    this.time.addEvent({
-      delay: 3000,
-      callback: () => {
-        if (this.lunaGirl) {
-          // Toggle between walking left and right
-          const currentAnim = this.lunaGirl.anims.currentAnim;
-          if (currentAnim && currentAnim.key === 'girl_walk_right') {
-            this.lunaGirl.play('girl_walk_left');
-            this.lunaGirl.setVelocityX(-30);
-          } else {
-            this.lunaGirl.play('girl_walk_right');
-            this.lunaGirl.setVelocityX(30);
-          }
-        }
-      },
-      loop: true
-    });
   }
 
   /**
@@ -342,33 +332,89 @@ export default class MainScene extends Phaser.Scene {
   handleNPCInteraction(npc) {
     const interaction = npc.interact();
     
-    // Cycle through dialogues
-    const dialogue = interaction.dialogues[this.currentDialogueIndex % interaction.dialogues.length];
-    this.currentDialogueIndex++;
-    
     // Stop NPC movement during dialogue
     npc.setVelocityX(0);
     
-    // Show dialogue
-    this.dialogueManager.startDialogue(interaction.name, dialogue);
+    // Show all dialogues (DialogueManager will handle cycling through them)
+    this.dialogueManager.startDialogue(interaction.name, interaction.dialogues);
     
-    // Resume NPC movement after dialogue closes
+    // Check when dialogue closes to activate following behavior
     this.time.delayedCall(100, () => {
       // Check periodically if dialogue is closed
       const checkDialogue = this.time.addEvent({
         delay: 100,
         callback: () => {
           if (!this.dialogueManager.isDialogueActive() && npc) {
-            // Resume walking animation
-            const currentAnim = npc.anims.currentAnim;
-            if (currentAnim) {
-              npc.play(currentAnim.key);
+            // Mark dialog as completed
+            if (npc === this.lunaGirl) {
+              this.lunaDialogCompleted = true;
+              this.updateLunaFollowBehavior();
             }
           }
         },
         repeat: 30 // Check for 3 seconds
       });
     });
+  }
+
+  /**
+   * Update Luna's following behavior
+   */
+  updateLunaFollowBehavior() {
+    if (!this.lunaGirl || !this.player) return;
+    
+    // Calculate distance to player
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.lunaGirl.x,
+      this.lunaGirl.y
+    );
+    
+    const followDistance = 80; // Stay this far from player
+    const runDistance = 200; // Start running if further than this
+    
+    if (distance > followDistance) {
+      // Calculate direction to player
+      const angle = Phaser.Math.Angle.Between(
+        this.lunaGirl.x,
+        this.lunaGirl.y,
+        this.player.x,
+        this.player.y
+      );
+      
+      // Determine speed based on distance
+      const speed = distance > runDistance ? 120 : 60;
+      
+      // Move towards player
+      this.lunaGirl.setVelocity(
+        Math.cos(angle) * speed,
+        0 // Keep Y velocity at 0 since we have gravity
+      );
+      
+      // Update animation based on direction
+      const velocityX = this.lunaGirl.body.velocity.x;
+      
+      if (Math.abs(velocityX) > 5) {
+        const animKey = distance > runDistance ? 'girl_run' : 'girl_walk';
+        const direction = velocityX > 0 ? 'right' : 'left';
+        const fullAnimKey = `${animKey}_${direction}`;
+        
+        if (this.lunaGirl.anims.currentAnim?.key !== fullAnimKey) {
+          this.lunaGirl.play(fullAnimKey);
+        }
+      }
+    } else {
+      // Close enough - stop and idle
+      this.lunaGirl.setVelocityX(0);
+      
+      // Play idle animation if not already
+      if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
+        // Determine direction based on player position
+        const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
+        this.lunaGirl.play(`girl_idle_${direction}`);
+      }
+    }
   }
 
   /**

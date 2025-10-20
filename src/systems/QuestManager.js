@@ -19,7 +19,6 @@ export default class QuestManager {
     quest.status = QUEST_STATUS.IN_PROGRESS;
     this.activeQuests.push(quest);
     
-    console.log(`Quest accepted: ${quest.title}`);
     this.showQuestNotification(`New Quest: ${quest.title}`);
   }
 
@@ -38,7 +37,6 @@ export default class QuestManager {
     // Check if objective completed
     if (objective.current >= objective.target) {
       objective.completed = true;
-      console.log(`Objective completed: ${objective.description}`);
     }
     
     // Check if all objectives completed
@@ -64,7 +62,6 @@ export default class QuestManager {
     this.completedQuests.push(quest);
     this.activeQuests.splice(questIndex, 1);
     
-    console.log(`Quest completed: ${quest.title}`);
     this.showQuestNotification(`Quest Complete: ${quest.title}`);
     
     // Call onComplete callback if exists
@@ -78,17 +75,14 @@ export default class QuestManager {
    */
   giveRewards(rewards) {
     if (rewards.gold) {
-      console.log(`Received ${rewards.gold} gold`);
       // Future: Add to player inventory
     }
     
     if (rewards.experience) {
-      console.log(`Received ${rewards.experience} XP`);
       // Future: Add to player experience
     }
     
     if (rewards.items && rewards.items.length > 0) {
-      console.log(`Received items:`, rewards.items);
       // Future: Add to player inventory
     }
   }
