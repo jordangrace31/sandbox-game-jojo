@@ -53,6 +53,11 @@ export default class MainScene extends Phaser.Scene {
     
     // Track if dialog has been completed with Luna
     this.lunaDialogCompleted = false;
+    
+    // Show welcome dialog after a short delay
+    this.time.delayedCall(500, () => {
+      this.showWelcomeDialog();
+    });
   }
 
   update() {
@@ -73,7 +78,6 @@ export default class MainScene extends Phaser.Scene {
       
       // Make Luna follow player after dialog is completed
       if (this.lunaDialogCompleted) {
-        console.log('Luna dialog completed');
         this.updateLunaFollowBehavior();
       }
     }
@@ -308,7 +312,7 @@ export default class MainScene extends Phaser.Scene {
     // Show interaction prompt if close enough
     const interactionDistance = 100;
     
-    if (distance < interactionDistance) {
+    if (distance < interactionDistance && !this.lunaDialogCompleted) {
       // Show prompt
       if (!this.interactionPrompt) {
         this.showInteractionPrompt();
@@ -341,10 +345,10 @@ export default class MainScene extends Phaser.Scene {
     // Check when dialogue closes to activate following behavior
     this.time.delayedCall(100, () => {
       // Check periodically if dialogue is closed
-      const checkDialogue = this.time.addEvent({
+      this.time.addEvent({
         delay: 100,
         callback: () => {
-          if (!this.dialogueManager.isDialogueActive() && npc) {
+          if (!this.dialogueManager.isDialogueActive() && npc && !this.lunaDialogCompleted) {
             // Mark dialog as completed
             if (npc === this.lunaGirl) {
               this.lunaDialogCompleted = true;
@@ -352,7 +356,7 @@ export default class MainScene extends Phaser.Scene {
             }
           }
         },
-        repeat: 30 // Check for 3 seconds
+        repeat: 600 // Check for 60 seconds
       });
     });
   }
@@ -384,7 +388,7 @@ export default class MainScene extends Phaser.Scene {
       );
       
       // Determine speed based on distance
-      const speed = distance > runDistance ? 120 : 60;
+      const speed = distance > runDistance ? 200 : 100;
       
       // Move towards player
       this.lunaGirl.setVelocity(
@@ -458,6 +462,16 @@ export default class MainScene extends Phaser.Scene {
       this.events.off('update', this.interactionPromptUpdate);
       this.interactionPromptUpdate = null;
     }
+  }
+
+  /**
+   * Show welcome dialog when entering the game
+   */
+  showWelcomeDialog() {
+    this.dialogueManager.startDialogue(
+      'Narrator',
+      "Hi Jojo! It's been the wonderful adventure so far... maybe we can recap?"
+    );
   }
 }
 

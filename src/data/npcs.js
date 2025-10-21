@@ -5,7 +5,7 @@
 
 export const NPC_DATA = {
   jojoGirl: {
-    name: "Luna",
+    name: "Jordan",
     dialogues: [
       "Hey there! Welcome to the left side of the world!",
       "I love exploring this way. The scenery is so peaceful.",
