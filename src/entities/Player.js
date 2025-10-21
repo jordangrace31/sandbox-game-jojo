@@ -22,10 +22,13 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastDirection = 'down';
     this.speed = PLAYER_CONFIG.speed;
     this.jumpPower = PLAYER_CONFIG.jumpPower;
+    this.isClimbing = false;
+    this.currentLadder = null;
     
     // Set up input
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.spaceKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.shiftKey = scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     
     // Start with idle animation
     this.play('idle_down');
@@ -35,8 +38,12 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * Update player state - call this in scene's update()
    */
   update() {
-    this.handleMovement();
-    this.handleJump();
+    if (this.isClimbing) {
+      this.handleClimbing();
+    } else {
+      this.handleMovement();
+      this.handleJump();
+    }
   }
 
   /**
@@ -116,6 +123,81 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    */
   isOnGround() {
     return this.body.touching.down;
+  }
+
+  /**
+   * Start climbing a ladder
+   */
+  startClimbing(ladder) {
+    this.isClimbing = true;
+    this.currentLadder = ladder;
+    this.setVelocityX(0);
+    this.setVelocityY(0);
+    this.setGravityY(-PLAYER_CONFIG.speed * 10); // Disable gravity
+    this.play('climb', true);
+  }
+
+  /**
+   * Stop climbing
+   */
+  stopClimbing() {
+    this.isClimbing = false;
+    this.currentLadder = null;
+    this.setGravityY(0); // Re-enable default gravity
+    this.setVelocityY(0);
+  }
+
+  /**
+   * Handle climbing movement
+   */
+  handleClimbing() {
+    // Check if player wants to stop climbing
+    if (!this.shiftKey.isDown || !this.currentLadder) {
+      this.stopClimbing();
+      return;
+    }
+
+    // Vertical movement while climbing
+    if (this.cursors.up.isDown) {
+      this.setVelocityY(-this.speed);
+      this.play('climb', true);
+    } else if (this.cursors.down.isDown) {
+      this.setVelocityY(this.speed);
+      this.play('climb', true);
+    } else {
+      this.setVelocityY(0);
+      this.anims.pause();
+    }
+
+    // Horizontal movement (for getting on/off ladder)
+    if (this.cursors.left.isDown) {
+      this.setVelocityX(-this.speed * 0.5);
+    } else if (this.cursors.right.isDown) {
+      this.setVelocityX(this.speed * 0.5);
+    } else {
+      this.setVelocityX(0);
+    }
+
+    // Align player with ladder center
+    if (this.currentLadder && Math.abs(this.x - this.currentLadder.x) < 5) {
+      this.x = this.currentLadder.x;
+    }
+  }
+
+  /**
+   * Check if near a ladder and can climb
+   */
+  checkLadderProximity(ladder) {
+    if (!ladder || this.isClimbing) return false;
+    
+    const distance = Phaser.Math.Distance.Between(
+      this.x,
+      this.y,
+      ladder.x,
+      ladder.y
+    );
+    
+    return distance < 50;
   }
 }
 

@@ -17,6 +17,7 @@ export default class AnimationManager {
     this.createWalkAnimations();
     this.createJumpAnimations();
     this.createIdleAnimations();
+    this.createClimbAnimations();
   }
 
   /**
@@ -26,6 +27,7 @@ export default class AnimationManager {
     this.createGirlWalkAnimations();
     this.createGirlRunAnimations();
     this.createGirlIdleAnimations();
+    this.createGirlClimbAnimations();
   }
 
   /**
@@ -151,6 +153,38 @@ export default class AnimationManager {
         frameRate: ANIMATION_CONFIG.idleFrameRate,
         repeat: -1
       });
+    });
+  }
+
+  /**
+   * Create climbing animations for player
+   */
+  createClimbAnimations() {
+    this.scene.anims.create({
+      key: 'climb',
+      frames: this.scene.anims.generateFrameNames('jojo_boy_climb', {
+        prefix: 'jojo_boy_back_',
+        start: 0,
+        end: 5
+      }),
+      frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
+    });
+  }
+
+  /**
+   * Create climbing animations for girl NPC
+   */
+  createGirlClimbAnimations() {
+    this.scene.anims.create({
+      key: 'girl_climb',
+      frames: this.scene.anims.generateFrameNames('jojo_girl_climb', {
+        prefix: 'jojo_girl_back_',
+        start: 0,
+        end: 5
+      }),
+      frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
     });
   }
 }

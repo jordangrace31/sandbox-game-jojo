@@ -1,0 +1,18 @@
+{
+    "frames": {
+      "jojo_boy_back_0": { "frame": { "x": 0, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_1": { "frame": { "x": 64, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_2": { "frame": { "x": 128, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_3": { "frame": { "x": 192, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_4": { "frame": { "x": 256, "y": 0, "w": 64, "h": 64 } },
+      "jojo_boy_back_5": { "frame": { "x": 320, "y": 0, "w": 64, "h": 64 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "jojo_boy_climb.png",
+      "format": "RGBA8888",
+      "size": { "w": 384, "h": 64 },
+      "scale": "1"
+    }
+  }

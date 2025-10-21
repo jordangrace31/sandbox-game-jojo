@@ -54,6 +54,16 @@ export default class MainScene extends Phaser.Scene {
     // Track if dialog has been completed with Luna
     this.lunaDialogCompleted = false;
     
+    // Track obstacle tutorial states
+    this.obstaclesTutorialShown = false;
+    this.rockJumpTutorialShown = false;
+    this.climbTutorialShown = false;
+    
+    // Obstacles (will be created after Luna dialog)
+    this.rockObstacle = null;
+    this.ladder = null;
+    this.platform = null;
+    
     // Show welcome dialog after a short delay
     this.time.delayedCall(500, () => {
       this.showWelcomeDialog();
@@ -79,11 +89,23 @@ export default class MainScene extends Phaser.Scene {
       // Make Luna follow player after dialog is completed
       if (this.lunaDialogCompleted) {
         this.updateLunaFollowBehavior();
+        
+        // Create obstacles if not created yet
+        if (!this.obstaclesTutorialShown) {
+          this.createObstacles();
+          this.obstaclesTutorialShown = true;
+        }
       }
     }
     
     // Check for NPC interactions
     this.checkNPCInteractions();
+    
+    // Check for obstacle tutorials
+    if (this.lunaDialogCompleted) {
+      this.checkObstacleTutorials();
+      this.checkLadderClimbing();
+    }
   }
 
   /**
@@ -278,7 +300,7 @@ export default class MainScene extends Phaser.Scene {
     const lunaData = getNPCData('jojoGirl');
     
     // Position Luna on the right side of the world
-    const lunaX = WORLD_CONFIG.width - 10000;
+    const lunaX = 1300;
     const lunaY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
     this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
@@ -365,7 +387,7 @@ export default class MainScene extends Phaser.Scene {
    * Update Luna's following behavior
    */
   updateLunaFollowBehavior() {
-    if (!this.lunaGirl || !this.player) return;
+    if (!this.lunaGirl || !this.player || this.lunaGirl.isClimbing) return;
     
     // Calculate distance to player
     const distance = Phaser.Math.Distance.Between(
@@ -395,6 +417,26 @@ export default class MainScene extends Phaser.Scene {
         Math.cos(angle) * speed,
         0 // Keep Y velocity at 0 since we have gravity
       );
+      
+      // Check if Luna needs to jump over the rock
+      if (this.rockObstacle) {
+        const distanceToRock = Phaser.Math.Distance.Between(
+          this.lunaGirl.x,
+          this.lunaGirl.y,
+          this.rockObstacle.x,
+          this.rockObstacle.y
+        );
+        
+        // Jump if near rock and player is on the other side
+        if (distanceToRock < 100 && this.lunaGirl.body.touching.down) {
+          const playerPastRock = (this.player.x > this.rockObstacle.x && this.lunaGirl.x < this.rockObstacle.x) ||
+                                (this.player.x < this.rockObstacle.x && this.lunaGirl.x > this.rockObstacle.x);
+          
+          if (playerPastRock) {
+            this.lunaGirl.setVelocityY(-300);
+          }
+        }
+      }
       
       // Update animation based on direction
       const velocityX = this.lunaGirl.body.velocity.x;
@@ -472,6 +514,190 @@ export default class MainScene extends Phaser.Scene {
       'Narrator',
       "Hi Jojo! It's been the wonderful adventure so far... maybe we can recap?"
     );
+  }
+
+  /**
+   * Create obstacle course after Luna dialog is completed
+   */
+  createObstacles() {
+    const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
+    
+    // Create rock obstacle - positioned ahead of Luna's starting position
+    const rockX = 1600;
+    const rockY = groundY - 30;
+    
+    this.rockObstacle = this.add.container(rockX, rockY);
+    
+    // Create a large boulder using ellipses
+    const boulder = this.add.ellipse(0, 0, 120, 80, 0x696969);
+    const shadow = this.add.ellipse(0, 35, 120, 20, 0x000000, 0.3);
+    const highlight1 = this.add.ellipse(-15, -15, 40, 30, 0x808080);
+    const highlight2 = this.add.ellipse(-25, -5, 25, 20, 0x909090);
+    
+    this.rockObstacle.add([shadow, boulder, highlight1, highlight2]);
+    
+    // Add physics to rock (static body - won't fall)
+    this.physics.add.existing(this.rockObstacle, true);
+    this.rockObstacle.body.setSize(120, 80);
+    
+    // Add collider with player and Luna
+    this.physics.add.collider(this.player, this.rockObstacle);
+    this.physics.add.collider(this.lunaGirl, this.rockObstacle);
+    
+    // Create ladder and platform - positioned after the rock
+    const ladderX = 1900;
+    const platformY = groundY - 150;
+    const platformHeight = 20;
+    
+    // Create wooden platform
+    this.platform = this.add.rectangle(
+      ladderX + 100,
+      platformY,
+      300,
+      platformHeight,
+      0x8B4513
+    );
+    this.physics.add.existing(this.platform, true);
+    
+    // Add wood texture details
+    const woodGrain = this.add.graphics();
+    woodGrain.lineStyle(2, 0x654321, 0.5);
+    for (let i = 0; i < 5; i++) {
+      const x = ladderX + 100 - 140 + (i * 70);
+      woodGrain.lineBetween(x, platformY - 10, x, platformY + 10);
+    }
+    
+    // Create ladder
+    const ladderHeight = 150;
+    this.ladder = this.add.container(ladderX, groundY);
+    
+    // Ladder sides
+    const leftRail = this.add.rectangle(-15, -ladderHeight / 2, 8, ladderHeight, 0x8B4513);
+    const rightRail = this.add.rectangle(15, -ladderHeight / 2, 8, ladderHeight, 0x8B4513);
+    
+    this.ladder.add([leftRail, rightRail]);
+    
+    // Ladder rungs
+    const rungCount = 8;
+    for (let i = 0; i < rungCount; i++) {
+      const y = (-ladderHeight + 20) + (i * (ladderHeight - 40) / (rungCount - 1));
+      const rung = this.add.rectangle(0, y, 40, 6, 0x654321);
+      this.ladder.add(rung);
+    }
+    
+    // Add physics to ladder for detection (static body - won't fall)
+    this.physics.add.existing(this.ladder, true);
+    this.ladder.body.setSize(50, ladderHeight);
+    this.ladder.body.setOffset(-25, -ladderHeight);
+    
+    // Add colliders with platform
+    this.physics.add.collider(this.player, this.platform);
+    this.physics.add.collider(this.lunaGirl, this.platform);
+  }
+
+  /**
+   * Check if player is near obstacles and show tutorials
+   */
+  checkObstacleTutorials() {
+    if (!this.rockObstacle || !this.player) return;
+    
+    // Check if player is near rock and show jump tutorial
+    if (!this.rockJumpTutorialShown) {
+      const distanceToRock = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.rockObstacle.x,
+        this.rockObstacle.y
+      );
+      
+      if (distanceToRock < 150 && !this.dialogueManager.isDialogueActive()) {
+        this.rockJumpTutorialShown = true;
+        this.dialogueManager.startDialogue(
+          'Tutorial',
+          'There\'s a big rock blocking the path! Press SPACEBAR to jump over it.'
+        );
+      }
+    }
+    
+    // Check if player is near ladder and show climb tutorial
+    if (!this.climbTutorialShown && this.ladder) {
+      const distanceToLadder = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.ladder.x,
+        this.ladder.y
+      );
+      
+      if (distanceToLadder < 150 && !this.dialogueManager.isDialogueActive()) {
+        this.climbTutorialShown = true;
+        this.dialogueManager.startDialogue(
+          'Tutorial',
+          'A ladder leads up to a platform! Get close and hold SHIFT while pressing UP to climb.'
+        );
+      }
+    }
+  }
+
+  /**
+   * Check if player can climb the ladder
+   */
+  checkLadderClimbing() {
+    if (!this.ladder || !this.player) return;
+    
+    // Check if player is near ladder
+    const nearLadder = this.player.checkLadderProximity(this.ladder);
+    
+    // Start climbing if shift is pressed and near ladder
+    if (nearLadder && this.player.shiftKey.isDown && !this.player.isClimbing) {
+      this.player.startClimbing(this.ladder);
+    }
+    
+    // Check if Luna should climb
+    if (this.lunaGirl && !this.lunaGirl.isClimbing) {
+      const lunaDistance = Phaser.Math.Distance.Between(
+        this.lunaGirl.x,
+        this.lunaGirl.y,
+        this.ladder.x,
+        this.ladder.y
+      );
+      
+      // If Luna is following and player is on platform above, make her climb
+      if (lunaDistance < 80 && this.player.y < this.ladder.y - 100) {
+        this.startLunaClimbing();
+      }
+    }
+  }
+
+  /**
+   * Make Luna climb the ladder
+   */
+  startLunaClimbing() {
+    if (!this.lunaGirl || this.lunaGirl.isClimbing) return;
+    
+    // Set Luna to climbing mode
+    this.lunaGirl.isClimbing = true;
+    this.lunaGirl.setVelocityX(0);
+    this.lunaGirl.setGravityY(-200);
+    this.lunaGirl.play('girl_climb', true);
+    
+    // Move Luna to ladder center
+    this.lunaGirl.x = this.ladder.x;
+    
+    // Climb up
+    const climbDuration = 2000;
+    this.tweens.add({
+      targets: this.lunaGirl,
+      y: this.ladder.y - 150,
+      duration: climbDuration,
+      ease: 'Linear',
+      onComplete: () => {
+        // Stop climbing
+        this.lunaGirl.isClimbing = false;
+        this.lunaGirl.setGravityY(0);
+        this.lunaGirl.setVelocityY(0);
+        this.lunaGirl.play('girl_idle_right', true);
+      }
+    });
   }
 }
 
