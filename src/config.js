@@ -18,10 +18,12 @@ export const GAME_CONFIG = {
 
 export const PLAYER_CONFIG = {
   speed: 300,
+  climbSpeed: 200,
   jumpPower: -500,
   bounce: 0.1,
   startX: 100,
-  startY: 450
+  startY: 450,
+  depth: 1000
 };
 
 export const ANIMATION_CONFIG = {
@@ -35,8 +37,8 @@ export const WORLD_CONFIG = {
   height: 700,
   groundHeight: 80,   // Height of the ground/grass area
   skyColors: {
-    top: '#4a90e2',    // Darker blue at top
-    bottom: '#87CEEB'  // Lighter blue at bottom
+    top: '#4a90e2',   
+    bottom: '#87CEEB'
   }
 };
 

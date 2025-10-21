@@ -1,6 +1,5 @@
 /**
  * IntroScene
- * Opening animation showing the game title with a beautiful sky and birds
  */
 
 import Phaser from 'phaser';
@@ -15,19 +14,14 @@ export default class IntroScene extends Phaser.Scene {
   create() {
     const { width, height } = this.cameras.main;
     
-    // Create beautiful sky gradient background
     this.createSkyGradient();
     
-    // Add sun
     this.createSun();
     
-    // Add clouds
     this.createClouds();
     
-    // Create and animate birds
     this.createBirds();
     
-    // Add game title with fade-in animation
     this.createTitle();
     
     // Add "Click to Start" text that appears after a delay

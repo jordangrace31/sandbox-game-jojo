@@ -21,6 +21,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Player state
     this.lastDirection = 'down';
     this.speed = PLAYER_CONFIG.speed;
+    this.climbSpeed = PLAYER_CONFIG.climbSpeed;
     this.jumpPower = PLAYER_CONFIG.jumpPower;
     this.isClimbing = false;
     this.currentLadder = null;

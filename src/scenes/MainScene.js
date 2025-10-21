@@ -34,6 +34,7 @@ export default class MainScene extends Phaser.Scene {
     
     // Create the player
     this.player = new Player(this, PLAYER_CONFIG.startX, PLAYER_CONFIG.startY);
+    this.player.setDepth(PLAYER_CONFIG.depth);
     
     // Create NPCs
     this.createNPCs();
@@ -54,20 +55,15 @@ export default class MainScene extends Phaser.Scene {
     // Track if dialog has been completed with Luna
     this.lunaDialogCompleted = false;
     
-    // Track obstacle tutorial states
-    this.obstaclesTutorialShown = false;
-    this.rockJumpTutorialShown = false;
-    this.climbTutorialShown = false;
-    
     // Obstacles (will be created after Luna dialog)
     this.rockObstacle = null;
     this.ladder = null;
     this.platform = null;
     
-    // Show welcome dialog after a short delay
-    this.time.delayedCall(500, () => {
-      this.showWelcomeDialog();
-    });
+    // // Show welcome dialog after a short delay
+    // this.time.delayedCall(500, () => {
+    //   this.showWelcomeDialog();
+    // });
   }
 
   update() {
@@ -81,6 +77,8 @@ export default class MainScene extends Phaser.Scene {
     if (this.dialogueManager) {
       this.dialogueManager.update();
     }
+
+    this.createObstacles();
     
     // Update NPCs
     if (this.lunaGirl) {
@@ -89,23 +87,12 @@ export default class MainScene extends Phaser.Scene {
       // Make Luna follow player after dialog is completed
       if (this.lunaDialogCompleted) {
         this.updateLunaFollowBehavior();
-        
-        // Create obstacles if not created yet
-        if (!this.obstaclesTutorialShown) {
-          this.createObstacles();
-          this.obstaclesTutorialShown = true;
-        }
       }
     }
     
     // Check for NPC interactions
     this.checkNPCInteractions();
     
-    // Check for obstacle tutorials
-    if (this.lunaDialogCompleted) {
-      this.checkObstacleTutorials();
-      this.checkLadderClimbing();
-    }
   }
 
   /**
@@ -304,6 +291,7 @@ export default class MainScene extends Phaser.Scene {
     const lunaY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
     this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
+    this.lunaGirl.setDepth(lunaData.depth);
     
     // Make Luna stand idle initially
     this.lunaGirl.play('girl_idle_down');
@@ -427,14 +415,13 @@ export default class MainScene extends Phaser.Scene {
           this.rockObstacle.y
         );
         
-        // Jump if near rock and player is on the other side
+        // Show NPC popup dialogue if near rock and player is on the other side
         if (distanceToRock < 100 && this.lunaGirl.body.touching.down) {
-          const playerPastRock = (this.player.x > this.rockObstacle.x && this.lunaGirl.x < this.rockObstacle.x) ||
-                                (this.player.x < this.rockObstacle.x && this.lunaGirl.x > this.rockObstacle.x);
-          
-          if (playerPastRock) {
-            this.lunaGirl.setVelocityY(-300);
+          if (!this.npcPopupDialogue) {
+            this.showNPCPopupDialogue(this.lunaGirl, "Ek is a klein meisie so I don't need to jump over the rock.");
           }
+        } else {
+          this.hideNPCPopupDialogue();
         }
       }
       
@@ -492,6 +479,35 @@ export default class MainScene extends Phaser.Scene {
     this.events.on('update', this.interactionPromptUpdate);
   }
 
+    /**
+   * Show interaction prompt above NPC
+   */
+    showNPCPopupDialogue(npc, message) {
+      if (this.npcPopupDialogue) return;
+      
+      this.npcPopupDialogue = this.add.text(
+        npc.x,
+        npc.y - 60,
+        message,
+        {
+          fontSize: '14px',
+          fill: '#ffffff',
+          backgroundColor: '#000000',
+          padding: { x: 8, y: 4 }
+        }
+      );
+      this.npcPopupDialogue.setOrigin(0.5);
+      this.npcPopupDialogue.setDepth(1000);
+      
+      // Make it follow the NPC
+      this.npcPopupDialogueUpdate = () => {
+        if (this.npcPopupDialogue && npc) {
+          this.npcPopupDialogue.setPosition(npc.x, npc.y - 60);
+        }
+      };
+      this.events.on('update', this.npcPopupDialogueUpdate);
+    }
+
   /**
    * Hide interaction prompt
    */
@@ -503,6 +519,20 @@ export default class MainScene extends Phaser.Scene {
     if (this.interactionPromptUpdate) {
       this.events.off('update', this.interactionPromptUpdate);
       this.interactionPromptUpdate = null;
+    }
+  }
+
+  /**
+  * Hide NPC popup dialogue
+  */
+  hideNPCPopupDialogue() {
+    if (this.npcPopupDialogue) {
+      this.npcPopupDialogue.destroy();
+      this.npcPopupDialogue = null;
+    }
+    if (this.npcPopupDialogueUpdate) {
+      this.events.off('update', this.npcPopupDialogueUpdate);
+      this.npcPopupDialogueUpdate = null;
     }
   }
 
@@ -524,7 +554,7 @@ export default class MainScene extends Phaser.Scene {
     
     // Create rock obstacle - positioned ahead of Luna's starting position
     const rockX = 1600;
-    const rockY = groundY - 30;
+    const rockY = groundY - 20;
     
     this.rockObstacle = this.add.container(rockX, rockY);
     
@@ -538,20 +568,21 @@ export default class MainScene extends Phaser.Scene {
     
     // Add physics to rock (static body - won't fall)
     this.physics.add.existing(this.rockObstacle, true);
-    this.rockObstacle.body.setSize(120, 80);
+    this.rockObstacle.body.setSize(80, 80);
+    this.rockObstacle.setDepth(900);
     
     // Add collider with player and Luna
     this.physics.add.collider(this.player, this.rockObstacle);
-    this.physics.add.collider(this.lunaGirl, this.rockObstacle);
+    // this.physics.add.collider(this.lunaGirl, this.rockObstacle);
     
     // Create ladder and platform - positioned after the rock
-    const ladderX = 1900;
+    const platformX = 2000;
     const platformY = groundY - 150;
     const platformHeight = 20;
     
     // Create wooden platform
     this.platform = this.add.rectangle(
-      ladderX + 100,
+      platformX,
       platformY,
       300,
       platformHeight,
@@ -563,141 +594,14 @@ export default class MainScene extends Phaser.Scene {
     const woodGrain = this.add.graphics();
     woodGrain.lineStyle(2, 0x654321, 0.5);
     for (let i = 0; i < 5; i++) {
-      const x = ladderX + 100 - 140 + (i * 70);
+      const x = platformX - 140 + (i * 70);
       woodGrain.lineBetween(x, platformY - 10, x, platformY + 10);
     }
-    
-    // Create ladder
-    const ladderHeight = 150;
-    this.ladder = this.add.container(ladderX, groundY);
-    
-    // Ladder sides
-    const leftRail = this.add.rectangle(-15, -ladderHeight / 2, 8, ladderHeight, 0x8B4513);
-    const rightRail = this.add.rectangle(15, -ladderHeight / 2, 8, ladderHeight, 0x8B4513);
-    
-    this.ladder.add([leftRail, rightRail]);
-    
-    // Ladder rungs
-    const rungCount = 8;
-    for (let i = 0; i < rungCount; i++) {
-      const y = (-ladderHeight + 20) + (i * (ladderHeight - 40) / (rungCount - 1));
-      const rung = this.add.rectangle(0, y, 40, 6, 0x654321);
-      this.ladder.add(rung);
-    }
-    
-    // Add physics to ladder for detection (static body - won't fall)
-    this.physics.add.existing(this.ladder, true);
-    this.ladder.body.setSize(50, ladderHeight);
-    this.ladder.body.setOffset(-25, -ladderHeight);
     
     // Add colliders with platform
     this.physics.add.collider(this.player, this.platform);
     this.physics.add.collider(this.lunaGirl, this.platform);
-  }
 
-  /**
-   * Check if player is near obstacles and show tutorials
-   */
-  checkObstacleTutorials() {
-    if (!this.rockObstacle || !this.player) return;
-    
-    // Check if player is near rock and show jump tutorial
-    if (!this.rockJumpTutorialShown) {
-      const distanceToRock = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.rockObstacle.x,
-        this.rockObstacle.y
-      );
-      
-      if (distanceToRock < 150 && !this.dialogueManager.isDialogueActive()) {
-        this.rockJumpTutorialShown = true;
-        this.dialogueManager.startDialogue(
-          'Tutorial',
-          'There\'s a big rock blocking the path! Press SPACEBAR to jump over it.'
-        );
-      }
-    }
-    
-    // Check if player is near ladder and show climb tutorial
-    if (!this.climbTutorialShown && this.ladder) {
-      const distanceToLadder = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.ladder.x,
-        this.ladder.y
-      );
-      
-      if (distanceToLadder < 150 && !this.dialogueManager.isDialogueActive()) {
-        this.climbTutorialShown = true;
-        this.dialogueManager.startDialogue(
-          'Tutorial',
-          'A ladder leads up to a platform! Get close and hold SHIFT while pressing UP to climb.'
-        );
-      }
-    }
-  }
-
-  /**
-   * Check if player can climb the ladder
-   */
-  checkLadderClimbing() {
-    if (!this.ladder || !this.player) return;
-    
-    // Check if player is near ladder
-    const nearLadder = this.player.checkLadderProximity(this.ladder);
-    
-    // Start climbing if shift is pressed and near ladder
-    if (nearLadder && this.player.shiftKey.isDown && !this.player.isClimbing) {
-      this.player.startClimbing(this.ladder);
-    }
-    
-    // Check if Luna should climb
-    if (this.lunaGirl && !this.lunaGirl.isClimbing) {
-      const lunaDistance = Phaser.Math.Distance.Between(
-        this.lunaGirl.x,
-        this.lunaGirl.y,
-        this.ladder.x,
-        this.ladder.y
-      );
-      
-      // If Luna is following and player is on platform above, make her climb
-      if (lunaDistance < 80 && this.player.y < this.ladder.y - 100) {
-        this.startLunaClimbing();
-      }
-    }
-  }
-
-  /**
-   * Make Luna climb the ladder
-   */
-  startLunaClimbing() {
-    if (!this.lunaGirl || this.lunaGirl.isClimbing) return;
-    
-    // Set Luna to climbing mode
-    this.lunaGirl.isClimbing = true;
-    this.lunaGirl.setVelocityX(0);
-    this.lunaGirl.setGravityY(-200);
-    this.lunaGirl.play('girl_climb', true);
-    
-    // Move Luna to ladder center
-    this.lunaGirl.x = this.ladder.x;
-    
-    // Climb up
-    const climbDuration = 2000;
-    this.tweens.add({
-      targets: this.lunaGirl,
-      y: this.ladder.y - 150,
-      duration: climbDuration,
-      ease: 'Linear',
-      onComplete: () => {
-        // Stop climbing
-        this.lunaGirl.isClimbing = false;
-        this.lunaGirl.setGravityY(0);
-        this.lunaGirl.setVelocityY(0);
-        this.lunaGirl.play('girl_idle_right', true);
-      }
-    });
   }
 }
 

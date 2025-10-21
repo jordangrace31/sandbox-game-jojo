@@ -21,10 +21,7 @@ export default class DialogueManager {
   startDialogue(npcName, dialogueText) {
     this.isActive = true;
     
-    // If dialogueText is a string, convert to array
-    if (typeof dialogueText === 'string') {
-      this.dialogueList = [dialogueText];
-    } else if (Array.isArray(dialogueText)) {
+    if (Array.isArray(dialogueText)) {
       this.dialogueList = dialogueText;
     } else {
       this.dialogueList = [dialogueText];
@@ -102,7 +99,7 @@ export default class DialogueManager {
     );
     
     this.dialogueBox.add([box, nameText, dialogueText, promptText]);
-    this.dialogueBox.setDepth(1000); // Ensure it's on top
+    this.dialogueBox.setDepth(2000); // Ensure it's on top
     this.dialogueBox.setScrollFactor(0); // Fixed to camera, not world
   }
 

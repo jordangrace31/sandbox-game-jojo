@@ -16,6 +16,7 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
     // NPC properties
     this.npcData = npcData;
     this.name = npcData.name;
+    this.depth = npcData.depth;
     this.dialogues = npcData.dialogues;
     this.quests = npcData.quests || [];
     
@@ -42,6 +43,7 @@ export default class NPC extends Phaser.Physics.Arcade.Sprite {
       padding: { x: 5, y: 2 }
     });
     this.nameText.setOrigin(0.5);
+    this.nameText.setDepth(this.depth + 1);
   }
 
   /**

@@ -8,11 +8,10 @@ export const NPC_DATA = {
     name: "Jordan",
     dialogues: [
       "Hey there! Welcome to the left side of the world!",
-      "I love exploring this way. The scenery is so peaceful.",
-      "Keep walking and you'll discover so much more!",
-      "Have you seen how beautiful the clouds look from here?"
+      "I love exploring this way. The scenery is so peaceful."
     ],
-    quests: []
+    quests: [],
+    depth: 999
   },
   
   villager1: {
@@ -37,7 +36,8 @@ export const NPC_DATA = {
         },
         completed: false
       }
-    ]
+    ],
+    depth: 998
   },
   
   blacksmith: {
@@ -62,7 +62,8 @@ export const NPC_DATA = {
         },
         completed: false
       }
-    ]
+    ],
+    depth: 997
   },
   
   mysteriousStranger: {
@@ -72,7 +73,8 @@ export const NPC_DATA = {
       "Are you brave enough to face what lies ahead?",
       "Some mysteries are better left unsolved..."
     ],
-    quests: []
+    quests: [],
+    depth: 996
   }
 };
 
