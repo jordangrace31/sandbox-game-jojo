@@ -17,7 +17,7 @@ export const GAME_CONFIG = {
 };
 
 export const PLAYER_CONFIG = {
-  speed: 300,
+  speed: 200,
   climbSpeed: 200,
   jumpPower: -500,
   bounce: 0.1,

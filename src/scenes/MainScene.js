@@ -59,6 +59,8 @@ export default class MainScene extends Phaser.Scene {
     this.rockObstacle = null;
     this.ladder = null;
     this.platform = null;
+    this.platform2 = null;
+    this.platform3 = null;
     
     // // Show welcome dialog after a short delay
     // this.time.delayedCall(500, () => {
@@ -576,7 +578,7 @@ export default class MainScene extends Phaser.Scene {
     // this.physics.add.collider(this.lunaGirl, this.rockObstacle);
     
     // Create ladder and platform - positioned after the rock
-    const platformX = 2000;
+    const platformX = 1900;
     const platformY = groundY - 150;
     const platformHeight = 20;
     
@@ -600,7 +602,55 @@ export default class MainScene extends Phaser.Scene {
     
     // Add colliders with platform
     this.physics.add.collider(this.player, this.platform);
-    this.physics.add.collider(this.lunaGirl, this.platform);
+
+    // Create second platform - positioned before the first platform
+    const platform2X = 2400;
+    const platform2Y = groundY - 300;
+    
+    this.platform2 = this.add.rectangle(
+      platform2X,
+      platform2Y,
+      200,
+      platformHeight,
+      0x8B4513
+    );
+    this.physics.add.existing(this.platform2, true);
+    
+    // Add wood texture details for platform 2
+    const woodGrain2 = this.add.graphics();
+    woodGrain2.lineStyle(2, 0x654321, 0.5);
+    for (let i = 0; i < 3; i++) {
+      const x = platform2X - 90 + (i * 70);
+      woodGrain2.lineBetween(x, platform2Y - 10, x, platform2Y + 10);
+    }
+    
+    // Add colliders with platform 2
+    this.physics.add.collider(this.player, this.platform2);
+
+    // Create third platform - positioned higher and further along
+    const platform3X = 2200;
+    const platform3Y = groundY - 200;
+    
+    this.platform3 = this.add.rectangle(
+      platform3X,
+      platform3Y,
+      250,
+      platformHeight,
+      0x8B4513
+    );
+    this.physics.add.existing(this.platform3, true);
+    
+    // Add wood texture details for platform 3
+    const woodGrain3 = this.add.graphics();
+    woodGrain3.lineStyle(2, 0x654321, 0.5);
+    for (let i = 0; i < 4; i++) {
+      const x = platform3X - 115 + (i * 70);
+      woodGrain3.lineBetween(x, platform3Y - 10, x, platform3Y + 10);
+    }
+    
+    // Add colliders with platform 3
+    this.physics.add.collider(this.player, this.platform3);
+    this.physics.add.collider(this.lunaGirl, this.platform3);
 
   }
 }

@@ -7,8 +7,9 @@ export const NPC_DATA = {
   jojoGirl: {
     name: "Jordan",
     dialogues: [
-      "Hey there! Welcome to the left side of the world!",
-      "I love exploring this way. The scenery is so peaceful."
+      "Hi pudding. I'm so glad you're here!",
+      "There's so much to do and I didn't want to start until you got here!",
+      "Take the lead - I'll be right behind."
     ],
     quests: [],
     depth: 999
