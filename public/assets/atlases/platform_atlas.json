@@ -1,0 +1,18 @@
+{
+    "frames": {
+      "platform_0": { "frame": { "x": 700, "y": 32, "w": 200, "h": 127 } },
+      "platform_1": { "frame": { "x": 700, "y": 160, "w": 200, "h": 129 } },
+      "mushroom_0": { "frame": { "x": 630, "y": 544, "w": 100, "h": 31 } },
+      "mushroom_1": { "frame": { "x": 650, "y": 544, "w": 100, "h": 31 } },
+      "flower_0": { "frame": { "x": 610, "y": 544, "w": 100, "h": 31 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "generic_platformer_tiles.png",
+      "format": "RGBA8888",
+      "size": { "w": 1024, "h": 768 },
+      "scale": "1"
+    }
+  }
+  

@@ -256,6 +256,14 @@ export default class MainScene extends Phaser.Scene {
     for (let i = 0; i < flowerCount; i++) {
       const x = Math.random() * WORLD_CONFIG.width;
       const y = groundY + 15;
+      const even = i % 2 === 0;
+      const xOffset = x + 10;
+
+      if (even) {
+        this.flower = this.add.sprite(x + xOffset, y, 'platform', 'flower_0');
+        this.flower.setOrigin(0.5);
+        this.flower.setDepth(850);
+      }
       
       // Flower stem
       const stem = this.add.line(x, y, 0, 0, 0, -12, 0x228B22, 1);
@@ -269,16 +277,25 @@ export default class MainScene extends Phaser.Scene {
     }
     
     // Add some rocks
-    const rockCount = 70;
+    const rockCount = 120;
     for (let i = 0; i < rockCount; i++) {
       const x = Math.random() * WORLD_CONFIG.width;
       const y = groundY + 25;
       const size = 8 + Math.random() * 12;
       
       const rock = this.add.ellipse(x, y, size, size * 0.7, 0x696969);
-      
-      // Add highlight for depth
       const highlight = this.add.ellipse(x - 2, y - 2, size * 0.4, size * 0.3, 0x808080);
+    }
+
+    const mushroomCount = 30;
+    for (let i = 0; i < mushroomCount; i++) {
+      const x = Math.random() * WORLD_CONFIG.width;
+      const y = groundY + Math.random() * 40;
+      const size = 8 + Math.random() * 12;
+      
+      this.mushroom = this.add.sprite(x, y, 'platform', 'mushroom_0');
+      this.mushroom.setOrigin(0.5);
+      this.mushroom.setDepth(850);
     }
   }
 
@@ -554,13 +571,8 @@ export default class MainScene extends Phaser.Scene {
   createObstacles() {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
-    // Create rock obstacle - positioned ahead of Luna's starting position
-    const rockX = 1600;
-    const rockY = groundY - 20;
+    this.rockObstacle = this.add.container(1600, groundY - 20);
     
-    this.rockObstacle = this.add.container(rockX, rockY);
-    
-    // Create a large boulder using ellipses
     const boulder = this.add.ellipse(0, 0, 120, 80, 0x696969);
     const shadow = this.add.ellipse(0, 35, 120, 20, 0x000000, 0.3);
     const highlight1 = this.add.ellipse(-15, -15, 40, 30, 0x808080);
@@ -573,84 +585,41 @@ export default class MainScene extends Phaser.Scene {
     this.rockObstacle.body.setSize(80, 80);
     this.rockObstacle.setDepth(900);
     
-    // Add collider with player and Luna
     this.physics.add.collider(this.player, this.rockObstacle);
-    // this.physics.add.collider(this.lunaGirl, this.rockObstacle);
-    
-    // Create ladder and platform - positioned after the rock
-    const platformX = 1900;
-    const platformY = groundY - 150;
-    const platformHeight = 20;
-    
-    // Create wooden platform
-    this.platform = this.add.rectangle(
-      platformX,
-      platformY,
-      300,
-      platformHeight,
-      0x8B4513
-    );
-    this.physics.add.existing(this.platform, true);
-    
-    // Add wood texture details
-    const woodGrain = this.add.graphics();
-    woodGrain.lineStyle(2, 0x654321, 0.5);
-    for (let i = 0; i < 5; i++) {
-      const x = platformX - 140 + (i * 70);
-      woodGrain.lineBetween(x, platformY - 10, x, platformY + 10);
-    }
-    
-    // Add colliders with platform
-    this.physics.add.collider(this.player, this.platform);
 
-    // Create second platform - positioned before the first platform
-    const platform2X = 2400;
-    const platform2Y = groundY - 300;
-    
-    this.platform2 = this.add.rectangle(
-      platform2X,
-      platform2Y,
-      200,
-      platformHeight,
-      0x8B4513
-    );
-    this.physics.add.existing(this.platform2, true);
-    
-    // Add wood texture details for platform 2
-    const woodGrain2 = this.add.graphics();
-    woodGrain2.lineStyle(2, 0x654321, 0.5);
-    for (let i = 0; i < 3; i++) {
-      const x = platform2X - 90 + (i * 70);
-      woodGrain2.lineBetween(x, platform2Y - 10, x, platform2Y + 10);
-    }
-    
-    // Add colliders with platform 2
-    this.physics.add.collider(this.player, this.platform2);
+    const platform1X = 1900; 
+    const platform1Y = groundY - 100; 
+      
+    this.platform1 = this.add.sprite(platform1X, platform1Y, 'platform', 'platform_0');
+    this.platform1.setOrigin(0.5);
+    this.platform1.setDepth(800);
 
-    // Create third platform - positioned higher and further along
-    const platform3X = 2200;
-    const platform3Y = groundY - 200;
+    this.physics.add.existing(this.platform1, true);
+    this.physics.add.collider(this.player, this.platform1);
+
+    const imagePlatform2X = 800; 
+    const imagePlatform2Y = groundY - 200; 
+      
+    this.imagePlatform2 = this.add.sprite(imagePlatform2X, imagePlatform2Y, 'platform', 'platform_1');
+    this.imagePlatform2.setOrigin(0.5);
+    this.imagePlatform2.setDepth(800);
+   
+    const treeX = platform1X - 700; 
+    const treeY = groundY - 75; 
     
-    this.platform3 = this.add.rectangle(
-      platform3X,
-      platform3Y,
-      250,
-      platformHeight,
-      0x8B4513
-    );
-    this.physics.add.existing(this.platform3, true);
-    
-    // Add wood texture details for platform 3
-    const woodGrain3 = this.add.graphics();
-    woodGrain3.lineStyle(2, 0x654321, 0.5);
-    for (let i = 0; i < 4; i++) {
-      const x = platform3X - 115 + (i * 70);
-      woodGrain3.lineBetween(x, platform3Y - 10, x, platform3Y + 10);
-    }
-    
-    // Add colliders with platform 3
-    this.physics.add.collider(this.player, this.platform3);
-    this.physics.add.collider(this.lunaGirl, this.platform3);
+    this.tree = this.add.sprite(treeX, treeY, 'background', 'tree');
+    this.tree.setOrigin(0.5);
+    this.tree.setDepth(800);
+    this.tree.setScale(1.5);
+
+
+    const postX = 200; 
+    const postY = groundY; 
+      
+    this.post = this.add.sprite(postX, postY, 'background', 'post_0');
+    this.post.setOrigin(0.5);
+    this.post.setDepth(800);
+    this.post.setScale(1.5);
 
   }
 }

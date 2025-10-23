@@ -1,0 +1,16 @@
+{
+    "frames": {
+      "tree": { "frame": { "x": 192, "y": 0, "w": 128, "h": 128 } },
+      "post_0": { "frame": { "x": 96, "y": 64, "w": 32, "h": 32 } },
+      "post_1": { "frame": { "x": 128, "y": 64, "w": 32, "h": 32 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "background.png",
+      "format": "RGBA8888",
+      "size": { "w": 320, "h": 192 },
+      "scale": "1"
+    }
+  }
+  

@@ -117,6 +117,24 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/jojo_girl_climb.png',
       'assets/atlases/jojo_girl_climb.json'
     );
+
+    this.load.atlas(
+      'background',
+      'assets/images/background.png',
+      'assets/atlases/background_atlas.json'
+    );
+
+    this.load.atlas(
+      'platform',
+      'assets/images/generic_platformer_tiles.png',
+      'assets/atlases/platform_atlas.json'
+    );
+
+    this.load.atlas(
+      'ground',
+      'assets/images/generic_platformer_tile_ground.png',
+      'assets/atlases/ground.json'
+    );
   }
 }
 
