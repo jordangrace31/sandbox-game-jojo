@@ -297,6 +297,11 @@ export default class MainScene extends Phaser.Scene {
       this.mushroom.setOrigin(0.5);
       this.mushroom.setDepth(850);
     }
+
+    this.bigTree = this.add.sprite(2800, groundY - 40, 'platform', 'tree_2');
+    this.bigTree.setOrigin(0.5);
+    this.bigTree.setDepth(800);
+    this.bigTree.setScale(1.5);
   }
 
   /**
@@ -317,6 +322,19 @@ export default class MainScene extends Phaser.Scene {
     
     // Add collision with ground
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
+
+    const hamiltonData = getNPCData('hamilton');
+    const hamiltonX = 2900;
+    const hamiltonY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
+    
+    this.hamilton = new NPC(this, hamiltonX, hamiltonY, 'hamilton_idle', hamiltonData);
+    this.hamilton.setDepth(hamiltonData.depth);
+    
+    // Make Hamilton stand idle initially
+    this.hamilton.play('hamilton_idle');
+
+    this.physics.add.collider(this.hamilton, this.groundPlatform);
+
   }
 
   /**
@@ -597,12 +615,15 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.existing(this.platform1, true);
     this.physics.add.collider(this.player, this.platform1);
 
-    const imagePlatform2X = 800; 
-    const imagePlatform2Y = groundY - 200; 
+    const imagePlatform2X = 2200; 
+    const imagePlatform2Y = groundY - 180; 
       
     this.imagePlatform2 = this.add.sprite(imagePlatform2X, imagePlatform2Y, 'platform', 'platform_1');
     this.imagePlatform2.setOrigin(0.5);
     this.imagePlatform2.setDepth(800);
+
+    this.physics.add.existing(this.imagePlatform2, true);
+    this.physics.add.collider(this.player, this.imagePlatform2);
    
     const treeX = platform1X - 700; 
     const treeY = groundY - 75; 

@@ -15,21 +15,19 @@ export const NPC_DATA = {
     depth: 999
   },
   
-  villager1: {
-    name: "Sarah",
+  hamilton: {
+    name: "Hamilton",
     dialogues: [
-      "Hello traveler! Welcome to our village!",
-      "The weather is lovely today, isn't it?",
-      "Have you met the blacksmith? He's quite skilled!"
+      "More julle, hoe gaan dit?"
     ],
     quests: [
       {
-        id: "fetch_apples",
-        title: "Gather Apples",
-        description: "Can you collect 5 apples for me? They grow on the trees to the east.",
+        id: "fetch_dop",
+        title: "Find Hamilton some Dop",
+        description: "Ek kan nie my dop vind nie.",
         objectives: {
-          apples_collected: 0,
-          apples_needed: 5
+          dop_collected: 0,
+          dop_needed: 1
         },
         reward: {
           gold: 50,

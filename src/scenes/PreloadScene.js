@@ -135,6 +135,18 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/generic_platformer_tile_ground.png',
       'assets/atlases/ground.json'
     );
+
+    this.load.atlas(
+      'hamilton_emote',
+      'assets/images/hamilton_emote.png',
+      'assets/atlases/hamilton_emote.json'
+    );
+
+    this.load.atlas(
+      'hamilton_idle',
+      'assets/images/hamilton_idle.png',
+      'assets/atlases/hamilton_idle.json'
+    );
   }
 }
 

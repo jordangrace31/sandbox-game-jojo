@@ -28,6 +28,8 @@ export default class AnimationManager {
     this.createGirlRunAnimations();
     this.createGirlIdleAnimations();
     this.createGirlClimbAnimations();
+    this.createHamiltonEmoteAnimations();
+    this.createHamiltonIdleAnimations();
   }
 
   /**
@@ -184,6 +186,39 @@ export default class AnimationManager {
         end: 5
       }),
       frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
+    });
+  }
+
+
+  /**
+   * Create Hamilton emote animations
+   */
+  createHamiltonEmoteAnimations() {
+    this.scene.anims.create({
+      key: 'hamilton_emote',
+      frames: this.scene.anims.generateFrameNames('hamilton_emote', {
+        prefix: 'hamilton_front_',
+        start: 0,
+        end: 2
+      }),
+      frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
+    });
+  }
+  
+  /**
+   * Create Hamilton idle animations
+   */
+  createHamiltonIdleAnimations() {
+    this.scene.anims.create({
+      key: 'hamilton_idle',
+      frames: this.scene.anims.generateFrameNames('hamilton_idle', {
+        prefix: 'hamilton_front_',
+        start: 0,
+        end: 1
+      }),
+      frameRate: ANIMATION_CONFIG.idleFrameRate,
       repeat: -1
     });
   }
