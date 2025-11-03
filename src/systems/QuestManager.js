@@ -74,16 +74,25 @@ export default class QuestManager {
    * Give quest rewards to player
    */
   giveRewards(rewards) {
-    if (rewards.gold) {
-      // Future: Add to player inventory
+    const hasGold = rewards.gold && rewards.gold > 0;
+    const hasExp = rewards.experience && rewards.experience > 0;
+    const hasItems = rewards.items && rewards.items.length > 0;
+    
+    if (hasGold) {
+      this.scene.playerStats.gold += rewards.gold;
     }
     
-    if (rewards.experience) {
-      // Future: Add to player experience
+    if (hasExp) {
+      this.scene.playerStats.experience += rewards.experience;
     }
     
-    if (rewards.items && rewards.items.length > 0) {
-      // Future: Add to player inventory
+    if (hasItems) {
+      this.scene.playerStats.items.push(...rewards.items);
+    }
+    
+    // Update the UI with animations
+    if (this.scene.updateStatsUI) {
+      this.scene.updateStatsUI(hasGold, hasExp, hasItems);
     }
   }
 

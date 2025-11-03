@@ -18,20 +18,21 @@ export const NPC_DATA = {
   hamilton: {
     name: "Hamilton",
     dialogues: [
-      "More julle, hoe gaan dit?"
+      "More julle, hoe gaan dit?",
+      "Ek kan nie my dop vind nie... Kan jy dit sien?",
     ],
     quests: [
       {
         id: "fetch_dop",
-        title: "Find Hamilton some Dop",
-        description: "Ek kan nie my dop vind nie.",
+        title: "Find Hamilton's Beer Bottle",
+        description: "Hamilton lost his dark green beer bottle somewhere in the world. Find it and bring it back to him.",
         objectives: {
-          dop_collected: 0,
-          dop_needed: 1
+          bottle_collected: false
         },
-        reward: {
+        rewards: {
           gold: 50,
-          experience: 100
+          experience: 100,
+          items: []
         },
         completed: false
       }
@@ -55,9 +56,10 @@ export const NPC_DATA = {
           iron_collected: 0,
           iron_needed: 3
         },
-        reward: {
-          item: "iron_sword",
-          experience: 200
+        rewards: {
+          gold: 0,
+          experience: 200,
+          items: ["iron_sword"]
         },
         completed: false
       }

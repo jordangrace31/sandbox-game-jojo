@@ -8,6 +8,7 @@ import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
 import AnimationManager from '../systems/AnimationManager.js';
 import DialogueManager from '../systems/DialogueManager.js';
+import QuestManager from '../systems/QuestManager.js';
 import { PLAYER_CONFIG, WORLD_CONFIG, GAME_CONFIG } from '../config.js';
 import { getNPCData } from '../data/npcs.js';
 
@@ -26,6 +27,18 @@ export default class MainScene extends Phaser.Scene {
     this.animationManager.createNPCAnimations();
     
     this.dialogueManager = new DialogueManager(this);
+    this.questManager = new QuestManager(this);
+    
+    // Track quest status
+    this.hamiltonQuestActive = false;
+    this.hamiltonQuestCompleted = false;
+    
+    // Player stats
+    this.playerStats = {
+      gold: 0,
+      experience: 0,
+      items: []
+    };
     
     // Create the world (order matters - background to foreground)
     this.createSky();
@@ -38,6 +51,12 @@ export default class MainScene extends Phaser.Scene {
     
     // Create NPCs
     this.createNPCs();
+    
+    // Create collectibles
+    this.createCollectibles();
+    
+    // Create UI
+    this.createStatsUI();
     
     // Set up camera to follow player
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
@@ -92,8 +111,15 @@ export default class MainScene extends Phaser.Scene {
       }
     }
     
+    if (this.hamilton) {
+      this.hamilton.update();
+    }
+    
     // Check for NPC interactions
     this.checkNPCInteractions();
+    
+    // Check for bottle collection
+    this.checkBottleCollection();
     
   }
 
@@ -338,41 +364,341 @@ export default class MainScene extends Phaser.Scene {
   }
 
   /**
+   * Create collectible items in the world
+   */
+  createCollectibles() {
+    const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
+    
+    // Create dark green beer bottle near the tree
+    const bottleX = 3100;
+    const bottleY = groundY - 10;
+    
+    // Create beer bottle using basic shapes
+    this.beerBottle = this.add.container(bottleX, bottleY);
+    
+    // Bottle body (dark green)
+    const bottleBody = this.add.rectangle(0, 0, 12, 30, 0x2d5016);
+    
+    // Bottle neck
+    const bottleNeck = this.add.rectangle(0, -18, 6, 8, 0x2d5016);
+    
+    // Bottle cap (gold)
+    const bottleCap = this.add.rectangle(0, -23, 7, 3, 0xFFD700);
+    
+    // Bottle highlight for glass effect
+    const highlight = this.add.rectangle(-2, -5, 3, 15, 0x5a8c2d, 0.5);
+    
+    // Add shimmer effect
+    const shimmer = this.add.circle(0, -8, 3, 0xffffff, 0.3);
+    
+    this.beerBottle.add([bottleBody, bottleNeck, bottleCap, highlight, shimmer]);
+    this.beerBottle.setDepth(900);
+    this.beerBottle.setSize(12, 30);
+    
+    // Add physics for overlap detection
+    this.physics.add.existing(this.beerBottle);
+    this.beerBottle.body.setAllowGravity(false);
+    
+    // Track if bottle has been collected
+    this.bottleCollected = false;
+    
+    // Add bobbing animation
+    this.tweens.add({
+      targets: this.beerBottle,
+      y: bottleY - 5,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    // Add label
+    this.bottleLabel = this.add.text(bottleX, bottleY - 40, 'Beer Bottle', {
+      fontSize: '12px',
+      fill: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 5, y: 2 }
+    });
+    this.bottleLabel.setOrigin(0.5);
+    this.bottleLabel.setDepth(901);
+  }
+
+  /**
+   * Create the player stats UI panel
+   */
+  createStatsUI() {
+    const padding = 15;
+    const panelWidth = 200;
+    const panelHeight = 120;
+    const panelX = GAME_CONFIG.width - panelWidth - padding;
+    const panelY = padding;
+    
+    // Create panel background
+    this.statsPanel = this.add.graphics();
+    this.statsPanel.fillStyle(0x000000, 0.7);
+    this.statsPanel.fillRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
+    this.statsPanel.lineStyle(2, 0xFFD700, 1);
+    this.statsPanel.strokeRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
+    this.statsPanel.setScrollFactor(0);
+    this.statsPanel.setDepth(2000);
+    
+    // Title
+    this.statsTitle = this.add.text(
+      panelX + panelWidth / 2,
+      panelY + 15,
+      'Player Stats',
+      {
+        fontSize: '16px',
+        fill: '#FFD700',
+        fontStyle: 'bold'
+      }
+    );
+    this.statsTitle.setOrigin(0.5, 0);
+    this.statsTitle.setScrollFactor(0);
+    this.statsTitle.setDepth(2001);
+    
+    // Gold text
+    this.goldText = this.add.text(
+      panelX + 15,
+      panelY + 40,
+      `💰 Gold: ${this.playerStats.gold}`,
+      {
+        fontSize: '14px',
+        fill: '#ffffff'
+      }
+    );
+    this.goldText.setScrollFactor(0);
+    this.goldText.setDepth(2001);
+    
+    // Experience text
+    this.expText = this.add.text(
+      panelX + 15,
+      panelY + 60,
+      `⭐ XP: ${this.playerStats.experience}`,
+      {
+        fontSize: '14px',
+        fill: '#ffffff'
+      }
+    );
+    this.expText.setScrollFactor(0);
+    this.expText.setDepth(2001);
+    
+    // Items text
+    this.itemsText = this.add.text(
+      panelX + 15,
+      panelY + 80,
+      `📦 Items: ${this.playerStats.items.length > 0 ? this.playerStats.items.join(', ') : 'None'}`,
+      {
+        fontSize: '14px',
+        fill: '#ffffff',
+        wordWrap: { width: panelWidth - 30 }
+      }
+    );
+    this.itemsText.setScrollFactor(0);
+    this.itemsText.setDepth(2001);
+  }
+
+  /**
+   * Update the stats UI display
+   */
+  updateStatsUI(animateGold = false, animateExp = false, animateItems = false) {
+    if (this.goldText) {
+      this.goldText.setText(`💰 Gold: ${this.playerStats.gold}`);
+      if (animateGold) {
+        this.flashText(this.goldText);
+      }
+    }
+    if (this.expText) {
+      this.expText.setText(`⭐ XP: ${this.playerStats.experience}`);
+      if (animateExp) {
+        this.flashText(this.expText);
+      }
+    }
+    if (this.itemsText) {
+      this.itemsText.setText(`📦 Items: ${this.playerStats.items.length > 0 ? this.playerStats.items.join(', ') : 'None'}`);
+      if (animateItems) {
+        this.flashText(this.itemsText);
+      }
+    }
+  }
+
+  /**
+   * Flash animation for text
+   */
+  flashText(textObject) {
+    // Scale up and change color briefly
+    this.tweens.add({
+      targets: textObject,
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: 150,
+      yoyo: true,
+      ease: 'Back.easeOut'
+    });
+    
+    // Color flash
+    textObject.setColor('#00ff00');
+    this.time.delayedCall(300, () => {
+      textObject.setColor('#ffffff');
+    });
+  }
+
+  /**
+   * Check if player can collect the beer bottle
+   */
+  checkBottleCollection() {
+    if (!this.beerBottle || this.bottleCollected || !this.player) return;
+    
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.beerBottle.x,
+      this.beerBottle.y
+    );
+    
+    const collectionDistance = 50;
+    
+    if (distance < collectionDistance) {
+      // Show collection prompt
+      if (!this.collectionPrompt) {
+        this.collectionPrompt = this.add.text(
+          this.beerBottle.x,
+          this.beerBottle.y - 55,
+          'Press E to collect',
+          {
+            fontSize: '12px',
+            fill: '#ffff00',
+            backgroundColor: '#000000',
+            padding: { x: 6, y: 3 }
+          }
+        );
+        this.collectionPrompt.setOrigin(0.5);
+        this.collectionPrompt.setDepth(1001);
+      }
+      
+      // Check if E key is pressed
+      if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
+        this.collectBottle();
+      }
+    } else {
+      // Hide prompt if player walks away
+      if (this.collectionPrompt) {
+        this.collectionPrompt.destroy();
+        this.collectionPrompt = null;
+      }
+    }
+  }
+
+  /**
+   * Collect the beer bottle
+   */
+  collectBottle() {
+    this.bottleCollected = true;
+    
+    // Destroy the bottle and its label
+    if (this.beerBottle) {
+      this.tweens.add({
+        targets: this.beerBottle,
+        alpha: 0,
+        y: this.beerBottle.y - 30,
+        duration: 500,
+        onComplete: () => {
+          this.beerBottle.destroy();
+          this.beerBottle = null;
+        }
+      });
+    }
+    
+    if (this.bottleLabel) {
+      this.bottleLabel.destroy();
+      this.bottleLabel = null;
+    }
+    
+    if (this.collectionPrompt) {
+      this.collectionPrompt.destroy();
+      this.collectionPrompt = null;
+    }
+    
+    // Show notification
+    const notif = this.add.text(
+      this.cameras.main.width / 2,
+      50,
+      'Collected: Dark Green Beer Bottle',
+      {
+        fontSize: '16px',
+        fill: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+      }
+    );
+    notif.setOrigin(0.5);
+    notif.setScrollFactor(0);
+    notif.setDepth(1001);
+    
+    // Fade out notification
+    this.tweens.add({
+      targets: notif,
+      alpha: 0,
+      duration: 1000,
+      delay: 2000,
+      onComplete: () => notif.destroy()
+    });
+  }
+
+  /**
    * Check if player is near any NPC and can interact
    */
   checkNPCInteractions() {
-    if (!this.lunaGirl || !this.player) return;
+    if (!this.player) return;
     
     // Don't check interactions if dialogue is already active
     if (this.dialogueManager && this.dialogueManager.isDialogueActive()) {
       return;
     }
     
-    // Calculate distance between player and Luna
-    const distance = Phaser.Math.Distance.Between(
-      this.player.x,
-      this.player.y,
-      this.lunaGirl.x,
-      this.lunaGirl.y
-    );
-    
-    // Show interaction prompt if close enough
     const interactionDistance = 100;
+    let nearestNPC = null;
+    let nearestDistance = Infinity;
     
-    if (distance < interactionDistance && !this.lunaDialogCompleted) {
-      // Show prompt
-      if (!this.interactionPrompt) {
-        this.showInteractionPrompt();
+    // Check all NPCs
+    const npcs = [
+      { npc: this.lunaGirl, skipCondition: this.lunaDialogCompleted },
+      { npc: this.hamilton, skipCondition: false }
+    ];
+    
+    for (const { npc, skipCondition } of npcs) {
+      if (!npc || skipCondition) continue;
+      
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        npc.x,
+        npc.y
+      );
+      
+      if (distance < interactionDistance && distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestNPC = npc;
+      }
+    }
+    
+    // Show interaction prompt for nearest NPC
+    if (nearestNPC) {
+      if (!this.interactionPrompt || this.currentInteractionNPC !== nearestNPC) {
+        this.hideInteractionPrompt();
+        this.showInteractionPrompt(nearestNPC);
+        this.currentInteractionNPC = nearestNPC;
       }
       
       // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
-        this.handleNPCInteraction(this.lunaGirl);
+        this.handleNPCInteraction(nearestNPC);
       }
     } else {
       // Hide prompt if player walks away
       if (this.interactionPrompt) {
         this.hideInteractionPrompt();
+        this.currentInteractionNPC = null;
       }
     }
   }
@@ -385,6 +711,23 @@ export default class MainScene extends Phaser.Scene {
     
     // Stop NPC movement during dialogue
     npc.setVelocityX(0);
+    
+    // Special handling for Hamilton's quest
+    if (npc === this.hamilton) {
+      if (this.hamiltonQuestCompleted) {
+        // Quest already completed
+        this.dialogueManager.startDialogue("Hamilton", ["Dankie vir die dop! You're a legend!"]);
+        return;
+      } else if (this.bottleCollected && !this.hamiltonQuestCompleted) {
+        // Player has the bottle, complete the quest
+        this.completeHamiltonQuest();
+        return;
+      } else if (!this.bottleCollected && !this.hamiltonQuestActive) {
+        // Start the quest
+        this.startHamiltonQuest(interaction);
+        return;
+      }
+    }
     
     // Show all dialogues (DialogueManager will handle cycling through them)
     this.dialogueManager.startDialogue(interaction.name, interaction.dialogues);
@@ -404,6 +747,76 @@ export default class MainScene extends Phaser.Scene {
           }
         },
         repeat: 600 // Check for 60 seconds
+      });
+    });
+  }
+
+  /**
+   * Start Hamilton's quest
+   */
+  startHamiltonQuest(interaction) {
+    this.hamiltonQuestActive = true;
+    
+    // Show quest dialogue
+    this.dialogueManager.startDialogue(interaction.name, interaction.dialogues);
+    
+    // Accept the quest
+    const quest = interaction.quest;
+    if (quest && this.questManager) {
+      this.questManager.acceptQuest(quest);
+    }
+  }
+
+  /**
+   * Complete Hamilton's quest
+   */
+  completeHamiltonQuest() {
+    this.hamiltonQuestCompleted = true;
+    
+    // Show completion dialogue
+    this.dialogueManager.startDialogue("Hamilton", [
+      "Ag, you found my dop! Dankie dankie!",
+      "You're a real boet. Here, take this as a reward!"
+    ]);
+    
+    // Complete the quest in the quest manager
+    if (this.questManager) {
+      this.questManager.completeQuest('fetch_dop');
+    }
+    
+    // Show a special completion effect
+    this.time.delayedCall(1000, () => {
+      const reward = this.add.text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2,
+        'Quest Complete!\n+50 Gold\n+100 XP',
+        {
+          fontSize: '24px',
+          fill: '#FFD700',
+          backgroundColor: '#000000',
+          padding: { x: 20, y: 10 },
+          align: 'center'
+        }
+      );
+      reward.setOrigin(0.5);
+      reward.setScrollFactor(0);
+      reward.setDepth(1002);
+      
+      // Fade in and out
+      reward.setAlpha(0);
+      this.tweens.add({
+        targets: reward,
+        alpha: 1,
+        duration: 500,
+        onComplete: () => {
+          this.tweens.add({
+            targets: reward,
+            alpha: 0,
+            duration: 1000,
+            delay: 2000,
+            onComplete: () => reward.destroy()
+          });
+        }
       });
     });
   }
@@ -490,12 +903,12 @@ export default class MainScene extends Phaser.Scene {
   /**
    * Show interaction prompt above NPC
    */
-  showInteractionPrompt() {
+  showInteractionPrompt(npc) {
     if (this.interactionPrompt) return;
     
     this.interactionPrompt = this.add.text(
-      this.lunaGirl.x,
-      this.lunaGirl.y - 60,
+      npc.x,
+      npc.y - 60,
       'Press E to talk',
       {
         fontSize: '14px',
@@ -509,8 +922,8 @@ export default class MainScene extends Phaser.Scene {
     
     // Make it follow the NPC
     this.interactionPromptUpdate = () => {
-      if (this.interactionPrompt && this.lunaGirl) {
-        this.interactionPrompt.setPosition(this.lunaGirl.x, this.lunaGirl.y - 60);
+      if (this.interactionPrompt && npc) {
+        this.interactionPrompt.setPosition(npc.x, npc.y - 60);
       }
     };
     this.events.on('update', this.interactionPromptUpdate);
