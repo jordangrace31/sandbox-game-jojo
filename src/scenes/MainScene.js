@@ -32,6 +32,8 @@ export default class MainScene extends Phaser.Scene {
     // Track quest status
     this.hamiltonQuestActive = false;
     this.hamiltonQuestCompleted = false;
+    this.campQuestTriggered = false;
+    this.campQuestCompleted = false;
     
     // Player stats
     this.playerStats = {
@@ -120,6 +122,9 @@ export default class MainScene extends Phaser.Scene {
     
     // Check for bottle collection
     this.checkBottleCollection();
+    
+    // Check for camp quest trigger
+    this.checkCampQuestTrigger();
     
   }
 
@@ -540,6 +545,41 @@ export default class MainScene extends Phaser.Scene {
     textObject.setColor('#00ff00');
     this.time.delayedCall(300, () => {
       textObject.setColor('#ffffff');
+    });
+  }
+
+  /**
+   * Check if player has reached the camp quest trigger zone
+   */
+  checkCampQuestTrigger() {
+    if (!this.player || this.campQuestTriggered || this.campQuestCompleted) return;
+    
+    const triggerX = 3600;
+    const triggerRange = 50;
+    
+    if (Math.abs(this.player.x - triggerX) < triggerRange) {
+      this.campQuestTriggered = true;
+      this.startCampQuest();
+    }
+  }
+
+  /**
+   * Start the camp quest by switching to CampScene
+   */
+  startCampQuest() {
+    // Fade out main scene
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    
+    // Wait for fade out to complete before switching scenes
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // Pause main scene
+      this.scene.pause('MainScene');
+      
+      // Start camp scene
+      this.scene.launch('CampScene');
+      
+      // Reset the camera fade for when we return
+      this.cameras.main.resetFX();
     });
   }
 

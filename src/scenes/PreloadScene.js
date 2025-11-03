@@ -119,6 +119,12 @@ export default class PreloadScene extends Phaser.Scene {
     );
 
     this.load.atlas(
+      'jojo_girl_emote',
+      'assets/images/jojo_girl_emote.png',
+      'assets/atlases/jojo_girl_emote.json'
+    );
+
+    this.load.atlas(
       'background',
       'assets/images/background.png',
       'assets/atlases/background_atlas.json'
@@ -128,6 +134,18 @@ export default class PreloadScene extends Phaser.Scene {
       'platform',
       'assets/images/generic_platformer_tiles.png',
       'assets/atlases/platform_atlas.json'
+    );
+
+    this.load.atlas(
+      'rope',
+      'assets/images/rope-png.png',
+      'assets/atlases/rope.json'
+    );
+
+    this.load.atlas(
+      'bed',
+      'assets/images/pixel-bed.png',
+      'assets/atlases/bed.json'
     );
 
     this.load.atlas(

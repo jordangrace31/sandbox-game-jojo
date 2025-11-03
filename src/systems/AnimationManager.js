@@ -30,6 +30,7 @@ export default class AnimationManager {
     this.createGirlClimbAnimations();
     this.createHamiltonEmoteAnimations();
     this.createHamiltonIdleAnimations();
+    this.createGirlEmoteAnimations();
   }
 
   /**
@@ -220,6 +221,22 @@ export default class AnimationManager {
       }),
       frameRate: ANIMATION_CONFIG.idleFrameRate,
       repeat: -1
+    });
+  }
+
+  /**
+   * Create Jojo Girl emote animations
+   */
+  createGirlEmoteAnimations() {
+    this.scene.anims.create({
+      key: 'girl_emote',
+      frames: this.scene.anims.generateFrameNames('jojo_girl_emote', {
+        prefix: 'jojo_girl_front_',
+        start: 0,
+        end: 2
+      }),
+      frameRate: 6,
+      repeat: 4  // Play a few times
     });
   }
 }
