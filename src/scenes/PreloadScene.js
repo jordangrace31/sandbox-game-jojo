@@ -19,6 +19,9 @@ export default class PreloadScene extends Phaser.Scene {
     
     // Load NPC assets
     this.loadNPCAssets();
+
+    // Load audio assets
+    this.loadAudioAssets();
   }
 
   create() {
@@ -151,6 +154,20 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/hamilton_idle.png',
       'assets/atlases/hamilton_idle.json'
     );
+  }
+
+  /**
+   * Load all audio assets
+   */
+  loadAudioAssets() {
+    // Load background music
+    this.load.audio('dear_katara', 'assets/audio/DearKatara.m4a');
+    this.load.audio('hells_bells', 'assets/audio/HellsBells.m4a');
+    
+    // Load sound effects (add these if you have the files)
+    // this.load.audio('pickup_sound', 'assets/audio/pickup.mp3');
+    // this.load.audio('success_sound', 'assets/audio/success.mp3');
+    // this.load.audio('jump_sound', 'assets/audio/jump.mp3');
   }
 }
 

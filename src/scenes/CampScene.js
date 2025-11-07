@@ -8,6 +8,7 @@ import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
 import AnimationManager from '../systems/AnimationManager.js';
 import DialogueManager from '../systems/DialogueManager.js';
+import MusicManager from '../systems/MusicManager.js';
 import { PLAYER_CONFIG, GAME_CONFIG } from '../config.js';
 
 export default class CampScene extends Phaser.Scene {
@@ -24,6 +25,10 @@ export default class CampScene extends Phaser.Scene {
     // Initialize systems
     this.animationManager = new AnimationManager(this);
     this.dialogueManager = new DialogueManager(this);
+    this.musicManager = new MusicManager(this);
+    
+    // Start camp music with fade in
+    this.musicManager.play('hells_bells', 0.4, true, 1500);
     
     // Quest tracking
     this.itemsCollected = {
@@ -613,18 +618,24 @@ export default class CampScene extends Phaser.Scene {
     
     // Fade out and return to main scene
     this.time.delayedCall(5000, () => {
+      // Fade out camp music
+      this.musicManager.stop(1000);
+      
       this.cameras.main.fadeOut(1000, 0, 0, 0);
       
       // Wait for fade out to complete before transitioning
       this.cameras.main.once('camerafadeoutcomplete', () => {
+        // Mark quest as completed in MainScene before stopping
+        if (mainScene) {
+          mainScene.campQuestCompleted = true;
+        }
+        
+        // Stop this scene and resume MainScene
         this.scene.stop('CampScene');
         this.scene.resume('MainScene');
         
-        // Mark quest as completed in MainScene
+        // Fade back in to MainScene (music will restart via resume event)
         if (mainScene) {
-          mainScene.campQuestCompleted = true;
-          
-          // Fade back in to MainScene
           mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
         }
       });

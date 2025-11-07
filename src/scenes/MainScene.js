@@ -9,6 +9,7 @@ import NPC from '../entities/NPC.js';
 import AnimationManager from '../systems/AnimationManager.js';
 import DialogueManager from '../systems/DialogueManager.js';
 import QuestManager from '../systems/QuestManager.js';
+import MusicManager from '../systems/MusicManager.js';
 import { PLAYER_CONFIG, WORLD_CONFIG, GAME_CONFIG } from '../config.js';
 import { getNPCData } from '../data/npcs.js';
 
@@ -28,6 +29,7 @@ export default class MainScene extends Phaser.Scene {
     
     this.dialogueManager = new DialogueManager(this);
     this.questManager = new QuestManager(this);
+    this.musicManager = new MusicManager(this);
     
     // Track quest status
     this.hamiltonQuestActive = false;
@@ -87,6 +89,18 @@ export default class MainScene extends Phaser.Scene {
     // this.time.delayedCall(500, () => {
     //   this.showWelcomeDialog();
     // });
+
+    // Start background music with fade in
+    this.musicManager.play('dear_katara', 0.5, true, 2000);
+    
+    // Set up scene resume event to restart music when returning from other scenes
+    this.events.on('resume', () => {
+      // Restart music when scene resumes (e.g., after CampScene)    
+      this.musicManager.stop(0);
+      if (this.musicManager) {
+        this.musicManager.play('dear_katara', 0.5, true, 2000);
+      }
+    });
   }
 
   update() {
@@ -567,6 +581,9 @@ export default class MainScene extends Phaser.Scene {
    * Start the camp quest by switching to CampScene
    */
   startCampQuest() {
+    // Fade out main scene music
+    this.musicManager.stop(1000);
+    
     // Fade out main scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
