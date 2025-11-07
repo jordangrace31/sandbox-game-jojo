@@ -236,7 +236,7 @@ export default class AnimationManager {
         end: 2
       }),
       frameRate: 6,
-      repeat: 4  // Play a few times
+      repeat: 5  // Play a few times
     });
   }
 }

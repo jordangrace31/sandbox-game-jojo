@@ -30,12 +30,11 @@ export default class CampScene extends Phaser.Scene {
       tarp: false,
       rope: false,
       cloth: false,
-      bed1: false,
-      bed2: false
+      bed: false
     };
     
     this.itemsDelivered = [];
-    this.requiredOrder = ['tarp', 'rope', 'cloth', 'bed', 'bed'];
+    this.requiredOrder = ['tarp', 'rope', 'bed'];
     this.currentHeldItem = null;
     
     // Create the world
@@ -247,21 +246,70 @@ export default class CampScene extends Phaser.Scene {
     
     // Dark green tarp (rectangle on ground)
     this.tarp = this.add.container(400, groundY);
-    const tarpRect = this.add.rectangle(0, 0, 80, 50, 0x2d5016);
-    const tarpLabel = this.add.text(0, -30, 'Tarp', {
+
+    // Base shape (use darker green with a gradient-like effect)
+    const tarp = this.add.graphics();
+    const width = 120;
+    const height = 70;
+    const topColor = Phaser.Display.Color.HexStringToColor('#3a6b20');
+    const bottomColor = Phaser.Display.Color.HexStringToColor('#1e3f10');
+    
+    // Simulate lighting with a vertical gradient using horizontal strips
+    const strips = 10;
+    const stripHeight = height / strips;
+    for (let i = 0; i < strips; i++) {
+      const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+        topColor,
+        bottomColor,
+        strips,
+        i
+      );
+      tarp.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+      tarp.fillRect(-width / 2, -height / 2 + (i * stripHeight), width, stripHeight);
+    }
+    
+    // Add outline for definition
+    tarp.lineStyle(2, 0x1b2e0c, 1);
+    tarp.strokeRect(-width / 2, -height / 2, width, height);
+    
+    // Add some wrinkle lines to simulate fabric texture
+    tarp.lineStyle(1, 0x2a5018, 0.5);
+    for (let i = 0; i < 3; i++) {
+      const yPos = -height / 2 + (height / 4) * (i + 1);
+      tarp.beginPath();
+      tarp.moveTo(-width / 2 + 10, yPos);
+      tarp.lineTo(width / 2 - 10, yPos + Phaser.Math.Between(-3, 3));
+      tarp.strokePath();
+    }
+    
+    // Add soft shadow underneath to anchor it to the ground
+    const shadow = this.add.ellipse(0, height / 2, width * 1.2, 15, 0x000000, 0.3);
+    shadow.setAlpha(0.3);
+    
+    // Create a sub-container for the tarp graphic and shadow (to be transformed)
+    const tarpGraphicContainer = this.add.container(0, 0);
+    tarpGraphicContainer.add([shadow, tarp]);
+    
+    // Apply perspective transformations only to the graphic, not the label
+    tarpGraphicContainer.setScale(1, 0.5);
+    tarpGraphicContainer.setRotation(Phaser.Math.DegToRad(2));
+    
+    // Label on top - stays upright and normal size
+    const tarpLabel = this.add.text(0, -40, 'Tarp', {
       fontSize: '12px',
       fill: '#ffffff',
       backgroundColor: '#000000',
       padding: { x: 4, y: 2 }
     });
     tarpLabel.setOrigin(0.5);
-    this.tarp.add([tarpRect, tarpLabel]);
+    
+    this.tarp.add([tarpGraphicContainer, tarpLabel]);
     this.tarp.setDepth(850);
     this.tarp.itemType = 'tarp';
     
     // Rope
-    this.rope = this.add.container(600, groundY);
-    const ropeSprite = this.add.sprite(0, 0, 'rope', 'rope');
+    this.rope = this.add.container(800, groundY);
+    const ropeSprite = this.add.tileSprite(0, 0, 2325, 1710, 'rope');
     ropeSprite.setScale(0.04); // Scale down the large rope image
     const ropeLabel = this.add.text(0, -30, 'Rope', {
       fontSize: '12px',
@@ -273,20 +321,6 @@ export default class CampScene extends Phaser.Scene {
     this.rope.add([ropeSprite, ropeLabel]);
     this.rope.setDepth(900);
     this.rope.itemType = 'rope';
-    
-    // Black cloth
-    this.cloth = this.add.container(800, groundY);
-    const clothRect = this.add.rectangle(0, 0, 70, 40, 0x1a1a1a);
-    const clothLabel = this.add.text(0, -30, 'Black Cloth', {
-      fontSize: '12px',
-      fill: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 4, y: 2 }
-    });
-    clothLabel.setOrigin(0.5);
-    this.cloth.add([clothRect, clothLabel]);
-    this.cloth.setDepth(850);
-    this.cloth.itemType = 'cloth';
 
     const bedLabel = this.add.text(0, -30, 'Bed', {
       fontSize: '12px',
@@ -296,21 +330,14 @@ export default class CampScene extends Phaser.Scene {
     });
     bedLabel.setOrigin(0.5);
 
-    this.bed1 = this.add.container(500, groundY);
-    const bed1Sprite = this.add.sprite(0, 0, 'bed', 'bed');
-    bed1Sprite.setScale(0.1);
-    this.bed1.add([bed1Sprite, bedLabel]);
-    this.bed1.setDepth(900);
-    this.bed1.itemType = 'bed';
-
-    this.bed2 = this.add.container(900, groundY);
-    const bed2Sprite = this.add.sprite(0, 0, 'bed', 'bed');
-    bed2Sprite.setScale(0.1);
-    this.bed2.add([bed2Sprite, bedLabel]);
-    this.bed1.setDepth(900);
-    this.bed1.itemType = 'bed';
+    this.bed = this.add.container(1000, groundY);
+    const bedSprite = this.add.tileSprite(0, 0, 2400, 1560, 'bed');
+    bedSprite.setScale(0.04);
+    this.bed.add([bedSprite, bedLabel]);
+    this.bed.setDepth(900);
+    this.bed.itemType = 'bed';
     
-    this.collectibleItems = [this.tarp, this.rope, this.cloth, this.bed1, this.bed2];
+    this.collectibleItems = [this.tarp, this.rope, this.bed];
   }
 
   /**
@@ -326,7 +353,7 @@ export default class CampScene extends Phaser.Scene {
     
     let nearestItem = null;
     let nearestDistance = Infinity;
-    const interactionDistance = 80;
+    const interactionDistance = 50;
     
     for (const item of this.collectibleItems) {
       if (!item || !item.active) continue;
@@ -413,9 +440,7 @@ export default class CampScene extends Phaser.Scene {
     const itemNames = {
       tarp: 'Tarp',
       rope: 'Rope',
-      cloth: 'Black Cloth',
-      bed1: 'Bed',
-      bed2: 'Bed'
+      bed: 'Bed'
     };
     
     this.heldItemText = this.add.text(
@@ -496,31 +521,29 @@ export default class CampScene extends Phaser.Scene {
   /**
    * Drop item at tree
    */
-  dropItemAtTree() {
-    const expectedItem = this.requiredOrder[this.itemsDelivered.length];
+  dropItemAtTree() {  
+    this.itemsDelivered.push(this.currentHeldItem);
+    this.currentHeldItem = null;
     
-    if (this.currentHeldItem === expectedItem) {
-      // Correct item!
-      this.itemsDelivered.push(this.currentHeldItem);
-      this.currentHeldItem = null;
+    if (this.heldItemText) {
+      this.heldItemText.destroy();
+      this.heldItemText = null;
+    }
+    
+    this.hideTreePrompt();
+    
+    // Show success message
+    this.showMessage(`${this.itemsDelivered.length}/${this.requiredOrder.length} items placed.`);
+    
+    // Check if quest is complete
+    if (this.itemsDelivered.length === this.requiredOrder.length) {
+      this.tent = this.add.container(1300, 605);
+      const tentSprite = this.add.tileSprite(0, 0, 350, 350, 'tent');
+      tentSprite.setScale(0.5); // Scale down the large tent image
+      this.tent.add([tentSprite]);
+      this.tent.setDepth(900);
       
-      if (this.heldItemText) {
-        this.heldItemText.destroy();
-        this.heldItemText = null;
-      }
-      
-      this.hideTreePrompt();
-      
-      // Show success message
-      this.showMessage(`Good! ${this.itemsDelivered.length}/${this.requiredOrder.length} items placed.`);
-      
-      // Check if quest is complete
-      if (this.itemsDelivered.length === this.requiredOrder.length) {
-        this.completeQuest();
-      }
-    } else {
-      // Wrong order!
-      this.showMessage("That's not the right order! Let's think about what we need first...");
+      this.completeQuest();
     }
   }
 
@@ -589,7 +612,7 @@ export default class CampScene extends Phaser.Scene {
     completeMsg.setDepth(2002);
     
     // Fade out and return to main scene
-    this.time.delayedCall(2500, () => {
+    this.time.delayedCall(5000, () => {
       this.cameras.main.fadeOut(1000, 0, 0, 0);
       
       // Wait for fade out to complete before transitioning

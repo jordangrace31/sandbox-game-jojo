@@ -136,23 +136,9 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/atlases/platform_atlas.json'
     );
 
-    this.load.atlas(
-      'rope',
-      'assets/images/rope-png.png',
-      'assets/atlases/rope.json'
-    );
-
-    this.load.atlas(
-      'bed',
-      'assets/images/pixel-bed.png',
-      'assets/atlases/bed.json'
-    );
-
-    this.load.atlas(
-      'ground',
-      'assets/images/generic_platformer_tile_ground.png',
-      'assets/atlases/ground.json'
-    );
+    this.load.image('rope', 'assets/images/rope-png.png');
+    this.load.image('bed', 'assets/images/bed-png.png');
+    this.load.image('tent', 'assets/images/tent-png.png');
 
     this.load.atlas(
       'hamilton_emote',

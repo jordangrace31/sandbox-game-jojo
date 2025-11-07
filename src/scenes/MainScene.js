@@ -554,7 +554,7 @@ export default class MainScene extends Phaser.Scene {
   checkCampQuestTrigger() {
     if (!this.player || this.campQuestTriggered || this.campQuestCompleted) return;
     
-    const triggerX = 3600;
+    const triggerX = 3400;
     const triggerRange = 50;
     
     if (Math.abs(this.player.x - triggerX) < triggerRange) {
