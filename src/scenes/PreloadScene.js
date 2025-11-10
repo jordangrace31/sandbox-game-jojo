@@ -154,6 +154,12 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/hamilton_idle.png',
       'assets/atlases/hamilton_idle.json'
     );
+
+    this.load.atlas(
+      'piepsie_tail',
+      'assets/images/piepsie-tail.png',
+      'assets/atlases/piepsie_tail.json'
+    );
   }
 
   /**

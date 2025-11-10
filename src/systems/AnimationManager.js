@@ -31,6 +31,7 @@ export default class AnimationManager {
     this.createHamiltonEmoteAnimations();
     this.createHamiltonIdleAnimations();
     this.createGirlEmoteAnimations();
+    this.createPiepsieTailAnimation();
   }
 
   /**
@@ -237,6 +238,22 @@ export default class AnimationManager {
       }),
       frameRate: 6,
       repeat: 5  // Play a few times
+    });
+  }
+
+  /**
+   * Create Piepsie tail animation
+   */
+  createPiepsieTailAnimation() {
+    this.scene.anims.create({
+      key: 'piepsie_tail',
+      frames: this.scene.anims.generateFrameNames('piepsie_tail', {
+        prefix: 'piepsie_tail_',
+        start: 0,
+        end: 2
+      }),
+      frameRate: 8,
+      repeat: -1
     });
   }
 }

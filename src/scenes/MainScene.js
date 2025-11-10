@@ -380,6 +380,14 @@ export default class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.hamilton, this.groundPlatform);
 
+    // Create Piepsie tail sprite
+    const piepsieX = 600;
+    const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
+    
+    this.piepsieTail = this.add.sprite(piepsieX, piepsieY, 'piepsie_tail');
+    this.piepsieTail.setOrigin(0.5);
+    this.piepsieTail.setDepth(850);
+    this.piepsieTail.play('piepsie_tail');
   }
 
   /**
