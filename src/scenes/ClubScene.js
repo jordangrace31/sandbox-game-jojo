@@ -187,19 +187,24 @@ export default class ClubScene extends Phaser.Scene {
    * Return to Main Scene
    */
   returnToMainScene() {
+    // Get scenes first
+    const lockStockScene = this.scene.get('LockStockScene');
+    
+    // Stop LockStock music immediately (before scene transitions)
+    if (lockStockScene && lockStockScene.musicManager) {
+      lockStockScene.musicManager.stop(0); // Immediate stop, no fade
+    }
+    
+    // Also stop any music playing in this scene using Phaser's global sound manager
+    this.sound.stopAll();
+    
     // Fade out
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
     // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Get scenes
+      // Get main scene
       const mainScene = this.scene.get('MainScene');
-      const lockStockScene = this.scene.get('LockStockScene');
-      
-      // Stop LockStock music if it's playing
-      if (lockStockScene && lockStockScene.musicManager) {
-        lockStockScene.musicManager.stop(1000);
-      }
       
       // Stop both ClubScene and LockStockScene
       this.scene.stop('ClubScene');

@@ -148,6 +148,11 @@ export default class MainScene extends Phaser.Scene {
       this.hamilton.update();
     }
     
+    if (this.piepsie) {
+      this.piepsie.update();
+      this.updatePiepsieAnimation();
+    }
+    
     // Check for NPC interactions
     this.checkNPCInteractions();
     
@@ -400,7 +405,7 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.hamilton, this.groundPlatform);
 
     const piepsieData = getNPCData('piepsie');
-    const piepsieX = 740;
+    const piepsieX = 5000;
     const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
 
     this.piepsie = new NPC(this, piepsieX, piepsieY, 'piepsie-tail-1', piepsieData);
@@ -596,7 +601,7 @@ export default class MainScene extends Phaser.Scene {
   checkCampQuestTrigger() {
     if (!this.player || this.campQuestTriggered || this.campQuestCompleted) return;
     
-    const triggerX = 3400;
+    const triggerX = 6000;
     const triggerRange = 50;
     
     if (Math.abs(this.player.x - triggerX) < triggerRange) {
@@ -611,7 +616,7 @@ export default class MainScene extends Phaser.Scene {
   checkLockStockTrigger() {
     if (!this.player || this.lockStockQuestCompleted || this.lockStockQuestTriggered) return;
     
-    const triggerX = 300;
+    const triggerX = 4000;
     const triggerRange = 50;
     const distance = Math.abs(this.player.x - triggerX);
     
@@ -947,6 +952,29 @@ export default class MainScene extends Phaser.Scene {
   }
 
   /**
+   * Update Piepsie's animation based on player proximity
+   */
+  updatePiepsieAnimation() {
+    if (!this.piepsie || !this.player) return;
+    
+    // Calculate horizontal distance to player
+    const distanceX = Math.abs(this.player.x - this.piepsie.x);
+    const proximityRange = 100;
+    
+    if (distanceX < proximityRange) {
+      // Player is close - play happy animation
+      if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail-happy') {
+        this.piepsie.play('piepsie-tail-happy');
+      }
+    } else {
+      // Player is far - play normal tail animation
+      if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail') {
+        this.piepsie.play('piepsie-tail');
+      }
+    }
+  }
+
+  /**
    * Update Luna's following behavior
    */
   updateLunaFollowBehavior() {
@@ -1179,6 +1207,25 @@ export default class MainScene extends Phaser.Scene {
     this.post.setOrigin(0.5);
     this.post.setDepth(800);
     this.post.setScale(1.5);
+
+    // Add scene trigger markers
+    // Camp Quest trigger marker at x=3400
+    const campTriggerX = 6000;
+    const campTriggerY = groundY;
+    
+    this.campTriggerMarker = this.add.sprite(campTriggerX, campTriggerY, 'background', 'post_0');
+    this.campTriggerMarker.setOrigin(0.5);
+    this.campTriggerMarker.setDepth(800);
+    this.campTriggerMarker.setScale(1.5);
+
+    // Lock Stock Scene trigger marker at x=4000
+    const lockStockTriggerX = 4000;
+    const lockStockTriggerY = groundY;
+    
+    this.lockStockTriggerMarker = this.add.sprite(lockStockTriggerX, lockStockTriggerY, 'background', 'post_0');
+    this.lockStockTriggerMarker.setOrigin(0.5);
+    this.lockStockTriggerMarker.setDepth(800);
+    this.lockStockTriggerMarker.setScale(1.5);
 
   }
 }
