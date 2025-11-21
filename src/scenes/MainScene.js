@@ -39,12 +39,15 @@ export default class MainScene extends Phaser.Scene {
     this.lockStockQuestTriggered = false;
     this.lockStockQuestCompleted = false;
     
-    // Player stats
-    this.playerStats = {
-      gold: 0,
-      experience: 0,
-      items: []
-    };
+    // Player stats - store in registry to share across scenes
+    if (!this.registry.has('playerStats')) {
+      this.registry.set('playerStats', {
+        gold: 0,
+        experience: 0,
+        items: []
+      });
+    }
+    this.playerStats = this.registry.get('playerStats');
     
     // Create the world (order matters - background to foreground)
     this.createSky();
@@ -97,6 +100,12 @@ export default class MainScene extends Phaser.Scene {
     
     // Set up scene resume event to restart music when returning from other scenes
     this.events.on('resume', () => {
+      // Update player stats from registry (may have changed in other scenes)
+      this.playerStats = this.registry.get('playerStats');
+      
+      // Update stats UI to reflect any changes
+      this.updateStatsUI(true, true, true);
+      
       // Restart music when scene resumes (e.g., after CampScene)
       if (this.musicManager) {
         // Stop any currently playing music

@@ -1,0 +1,28 @@
+{
+    "frames": {
+      "sir_allister_back_0": { "frame": { "x": 0, "y": 0, "w": 64, "h": 64 } },
+      "sir_allister_back_1": { "frame": { "x": 64, "y": 0, "w": 64, "h": 64 } },
+      "sir_allister_back_2": { "frame": { "x": 128, "y": 0, "w": 64, "h": 64 } },
+  
+      "sir_allister_left_0": { "frame": { "x": 0, "y": 64, "w": 64, "h": 64 } },
+      "sir_allister_left_1": { "frame": { "x": 64, "y": 64, "w": 64, "h": 64 } },
+      "sir_allister_left_2": { "frame": { "x": 128, "y": 64, "w": 64, "h": 64 } },
+  
+      "sir_allister_front_0": { "frame": { "x": 0, "y": 128, "w": 64, "h": 64 } },
+      "sir_allister_front_1": { "frame": { "x": 64, "y": 128, "w": 64, "h": 64 } },
+      "sir_allister_front_2": { "frame": { "x": 128, "y": 128, "w": 64, "h": 64 } },
+  
+      "sir_allister_right_0": { "frame": { "x": 0, "y": 192, "w": 64, "h": 64 } },
+      "sir_allister_right_1": { "frame": { "x": 64, "y": 192, "w": 64, "h": 64 } },
+      "sir_allister_right_2": { "frame": { "x": 128, "y": 192, "w": 64, "h": 64 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "sir_allister_emote.png",
+      "format": "RGBA8888",
+      "size": { "w": 192, "h": 256 },
+      "scale": "1"
+    }
+  }
+

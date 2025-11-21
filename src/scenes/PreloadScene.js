@@ -91,6 +91,12 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/images/jojo_boy_climb.png',
       'assets/atlases/jojo_boy_climb.json'
     );
+
+    this.load.atlas(
+      'jojo_boy_emote',
+      'assets/images/jojo_boy_emote.png',
+      'assets/atlases/jojo_boy_emote.json'
+    );
   }
 
   /**
@@ -156,6 +162,24 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/atlases/hamilton_idle.json'
     );
 
+    this.load.atlas(
+      'sir_allister_emote',
+      'assets/images/sir_allister_emote.png',
+      'assets/atlases/sir_allister_emote.json'
+    );
+
+    this.load.atlas(
+      'sir_allister_idle',
+      'assets/images/sir_allister_idle.png',
+      'assets/atlases/sir_allister_idle.json'
+    );
+
+    this.load.atlas(
+      'sir_allister_run',
+      'assets/images/sir_allister_run.png',
+      'assets/atlases/sir_allister_run.json'
+    );
+
     // Load Piepsie sprites
     this.load.image('piepsie-tail-1', 'assets/images/piepsie-tail-1.png');
     this.load.image('piepsie-tail-2', 'assets/images/piepsie-tail-2.png');
@@ -170,6 +194,7 @@ export default class PreloadScene extends Phaser.Scene {
     // Load background music
     this.load.audio('dear_katara', 'assets/audio/DearKatara.m4a');
     this.load.audio('hells_bells', 'assets/audio/HellsBells.m4a');
+    this.load.audio('lock_stock', 'assets/audio/TheWayIAre.m4a');
     
     // Load sound effects (add these if you have the files)
     // this.load.audio('pickup_sound', 'assets/audio/pickup.mp3');

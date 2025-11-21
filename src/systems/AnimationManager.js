@@ -18,6 +18,7 @@ export default class AnimationManager {
     this.createJumpAnimations();
     this.createIdleAnimations();
     this.createClimbAnimations();
+    this.createPlayerEmoteAnimations();
   }
 
   /**
@@ -30,6 +31,9 @@ export default class AnimationManager {
     this.createGirlClimbAnimations();
     this.createHamiltonEmoteAnimations();
     this.createHamiltonIdleAnimations();
+    this.createSirAllisterEmoteAnimations();
+    this.createSirAllisterIdleAnimations();
+    this.createSirAllisterRunAnimations();
     this.createGirlEmoteAnimations();
     this.createPiepsieTailAnimation();
   }
@@ -177,6 +181,22 @@ export default class AnimationManager {
   }
 
   /**
+   * Create player emote/dance animations
+   */
+  createPlayerEmoteAnimations() {
+    this.scene.anims.create({
+      key: 'player_emote',
+      frames: this.scene.anims.generateFrameNames('jojo_boy_emote', {
+        prefix: 'jojo_boy_front_',
+        start: 0,
+        end: 2
+      }),
+      frameRate: 8,
+      repeat: -1
+    });
+  }
+
+  /**
    * Create climbing animations for girl NPC
    */
   createGirlClimbAnimations() {
@@ -226,6 +246,59 @@ export default class AnimationManager {
   }
 
   /**
+   * Create Sir Allister emote animations
+   */
+  createSirAllisterEmoteAnimations() {
+    this.scene.anims.create({
+      key: 'sir_allister_emote',
+      frames: this.scene.anims.generateFrameNames('sir_allister_emote', {
+        prefix: 'sir_allister_front_',
+        start: 0,
+        end: 2
+      }),
+      frameRate: 5,
+      repeat: -1
+    });
+  }
+  
+  /**
+   * Create Sir Allister idle animations
+   */
+  createSirAllisterIdleAnimations() {
+    this.scene.anims.create({
+      key: 'sir_allister_idle',
+      frames: this.scene.anims.generateFrameNames('sir_allister_idle', {
+        prefix: 'sir_allister_front_',
+        start: 0,
+        end: 1
+      }),
+      frameRate: ANIMATION_CONFIG.idleFrameRate,
+      repeat: -1
+    });
+  }
+
+  /**
+   * Create Sir Allister running animations for all four directions
+   */
+  createSirAllisterRunAnimations() {
+    const directions = ['down', 'up', 'left', 'right'];
+    const prefixes = ['front', 'back', 'left', 'right'];
+
+    directions.forEach((direction, index) => {
+      this.scene.anims.create({
+        key: `sir_allister_run_${direction}`,
+        frames: this.scene.anims.generateFrameNames('sir_allister_run', {
+          prefix: `sir_allister_${prefixes[index]}_`,
+          start: 0,
+          end: 7
+        }),
+        frameRate: 8,
+        repeat: -1
+      });
+    });
+  }
+
+  /**
    * Create Jojo Girl emote animations
    */
   createGirlEmoteAnimations() {
@@ -237,7 +310,7 @@ export default class AnimationManager {
         end: 2
       }),
       frameRate: 6,
-      repeat: 5  // Play a few times
+      repeat: -1
     });
   }
 

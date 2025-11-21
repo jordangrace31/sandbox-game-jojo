@@ -85,6 +85,34 @@ export const NPC_DATA = {
     ],
     quests: [],
     depth: 996
+  },
+
+  sirAllister: {
+    name: "Sir Allister",
+    dialogues: [
+      "Good evening kind sir! Welcome to the Lock Stock and Beer.",
+      "This establishment has the finest spirits in town.",
+      "Before you leave, you must honor our tradition...",
+      "Dance with me for 20 seconds! Hold D to dance!"
+    ],
+    quests: [
+      {
+        id: "dance_with_sir_allister",
+        title: "Dance with Sir Allister",
+        description: "Honor the Lock Stock tradition by dancing with Sir Allister for 20 seconds. Hold D to dance!",
+        objectives: {
+          dance_time: 0,
+          dance_time_needed: 20
+        },
+        rewards: {
+          gold: 100,
+          experience: 150,
+          items: []
+        },
+        completed: false
+      }
+    ],
+    depth: 995
   }
 };
 

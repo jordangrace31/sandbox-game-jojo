@@ -5,10 +5,12 @@
 
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
+import NPC from '../entities/NPC.js';
 import AnimationManager from '../systems/AnimationManager.js';
 import DialogueManager from '../systems/DialogueManager.js';
 import MusicManager from '../systems/MusicManager.js';
 import { PLAYER_CONFIG, GAME_CONFIG } from '../config.js';
+import { getNPCData } from '../data/npcs.js';
 
 export default class LockStockScene extends Phaser.Scene {
   constructor() {
@@ -26,11 +28,24 @@ export default class LockStockScene extends Phaser.Scene {
     this.dialogueManager = new DialogueManager(this);
     this.musicManager = new MusicManager(this);
     
+    // Start lock stock music with fade in (only if not already playing)
+    if (!this.musicManager.isPlaying() || this.musicManager.getCurrentTrack() !== 'lock_stock') {
+      this.musicManager.play('lock_stock', 0.4, true, 1500);
+    }
+    
+    // Door position for interaction
+    this.doorPosition = { x: 1100, y: 400 };
+    this.doorPrompt = null;
+    
     // Create the world
     this.createSky();
     this.createStreet();
     this.createSidewalk();
+    this.createObstacles();
     this.createBuilding();
+    
+    // Create NPCs
+    this.createNPCs();
     
     // Create the player (spawned from above to fall onto sidewalk)
     this.player = new Player(this, 200, 200);
@@ -41,6 +56,13 @@ export default class LockStockScene extends Phaser.Scene {
     
     // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
+    
+    // Add collisions with obstacles
+    if (this.obstacles) {
+      this.obstacles.forEach(obstacle => {
+        this.physics.add.collider(this.player, obstacle);
+      });
+    }
     
     // Set up interaction key
     this.interactionKey = this.input.keyboard.addKey('E');
@@ -53,11 +75,39 @@ export default class LockStockScene extends Phaser.Scene {
     
     // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
+    
+    // Set up scene resume event (when returning from ClubScene)
+    this.events.on('resume', () => {
+      // Music continues playing - no need to restart it
+      // Just ensure the scene is ready
+      if (this.cameras.main) {
+        this.cameras.main.resetFX();
+      }
+      
+      // Reset luna's floating state if returning from club
+      if (this.lunaGirl) {
+        this.lunaIsFloating = false;
+        this.lunaFloatTarget = null;
+        if (this.lunaGirl.body) {
+          this.lunaGirl.body.setAllowGravity(true);
+        }
+      }
+    });
   }
 
   update() {
     // Update player
     this.player.update();
+    
+    // Update NPCs
+    if (this.lunaGirl) {
+      this.lunaGirl.update();
+      
+      // Make Luna follow player
+      if (this.lunaFollowEnabled) {
+        this.updateLunaFollowBehavior();
+      }
+    }
     
     // Update dialogue manager
     if (this.dialogueManager) {
@@ -66,6 +116,9 @@ export default class LockStockScene extends Phaser.Scene {
     
     // Check for exit
     this.checkExit();
+    
+    // Check for club door interaction
+    this.checkDoorInteraction();
   }
 
   /**
@@ -78,9 +131,95 @@ export default class LockStockScene extends Phaser.Scene {
   }
 
   /**
+   * Check if player is near the club door
+   */
+  checkDoorInteraction() {
+    if (!this.player || !this.doorPosition) return;
+    
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.doorPosition.x,
+      this.doorPosition.y
+    );
+    
+    const interactionDistance = 80;
+    
+    if (distance < interactionDistance) {
+      // Show prompt
+      if (!this.doorPrompt) {
+        this.showDoorPrompt();
+      }
+      
+      // Check if E key is pressed
+      if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
+        this.enterClub();
+      }
+    } else {
+      // Hide prompt if player walks away
+      this.hideDoorPrompt();
+    }
+  }
+
+  /**
+   * Show door interaction prompt
+   */
+  showDoorPrompt() {
+    if (this.doorPrompt) return;
+    
+    this.doorPrompt = this.add.text(
+      this.doorPosition.x,
+      this.doorPosition.y - 60,
+      'Press E to enter club',
+      {
+        fontSize: '14px',
+        fill: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 8, y: 4 }
+      }
+    );
+    this.doorPrompt.setOrigin(0.5);
+    this.doorPrompt.setDepth(2001);
+  }
+
+  /**
+   * Hide door prompt
+   */
+  hideDoorPrompt() {
+    if (this.doorPrompt) {
+      this.doorPrompt.destroy();
+      this.doorPrompt = null;
+    }
+  }
+
+  /**
+   * Enter the club interior
+   */
+  enterClub() {
+    // Fade out
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    
+    // Wait for fade out to complete before switching scenes
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // DON'T stop music - let it continue playing
+      
+      // Pause this scene (keeps music playing)
+      this.scene.pause('LockStockScene');
+      
+      // Launch club scene
+      this.scene.launch('ClubScene');
+    });
+  }
+
+  /**
    * Return to the main scene
    */
   returnToMainScene() {
+    // Stop the Lock Stock music when leaving for MainScene
+    if (this.musicManager) {
+      this.musicManager.stop(1000);
+    }
+    
     // Fade out
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
@@ -98,6 +237,122 @@ export default class LockStockScene extends Phaser.Scene {
         mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
       }
     });
+  }
+
+  /**
+   * Update Luna's following behavior
+   */
+  updateLunaFollowBehavior() {
+    if (!this.lunaGirl || !this.player) return;
+    
+    const buildingX = 1050; // X position where building area starts
+    const buildingPlatformY = 390; // Y position of building platform
+    
+    // Check if player is near the building and luna should float up
+    if (this.lunaGirl.x > buildingX && !this.lunaIsFloating) {
+      // Start floating luna up to the building platform
+      this.lunaIsFloating = true;
+      this.lunaFloatTarget = { x: 1150, y: buildingPlatformY };
+      
+      // Disable gravity while floating
+      this.lunaGirl.body.setAllowGravity(false);
+      this.lunaGirl.setVelocityY(0);
+      
+      // Play idle animation during float
+      this.lunaGirl.play('girl_idle_right');
+    }
+    
+    // Handle floating behavior
+    if (this.lunaIsFloating && this.lunaFloatTarget) {
+      const distanceToTarget = Phaser.Math.Distance.Between(
+        this.lunaGirl.x,
+        this.lunaGirl.y,
+        this.lunaFloatTarget.x,
+        this.lunaFloatTarget.y
+      );
+      
+      if (distanceToTarget > 5) {
+        // Move towards target position
+        const angle = Phaser.Math.Angle.Between(
+          this.lunaGirl.x,
+          this.lunaGirl.y,
+          this.lunaFloatTarget.x,
+          this.lunaFloatTarget.y
+        );
+        
+        const floatSpeed = 150;
+        this.lunaGirl.setVelocity(
+          Math.cos(angle) * floatSpeed,
+          Math.sin(angle) * floatSpeed
+        );
+      } else {
+        // Reached target, stop floating
+        this.lunaGirl.setVelocity(0, 0);
+        this.lunaGirl.setPosition(this.lunaFloatTarget.x, this.lunaFloatTarget.y);
+      }
+      
+      return; // Skip normal following while floating
+    }
+    
+    // If player goes back from building, reset luna
+    if (this.lunaIsFloating && this.player.x < buildingX - 100) {
+      this.lunaIsFloating = false;
+      this.lunaFloatTarget = null;
+      this.lunaGirl.body.setAllowGravity(true);
+    }
+    
+    // Normal following behavior (when not floating)
+    if (!this.lunaIsFloating) {
+      // Calculate distance to player
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        this.lunaGirl.x,
+        this.lunaGirl.y
+      );
+      
+      const followDistance = 80; // Stay this far from player
+      const runDistance = 200; // Start running if further than this
+      
+      if (distance > followDistance) {
+        // Calculate direction to player
+        const angle = Phaser.Math.Angle.Between(
+          this.lunaGirl.x,
+          this.lunaGirl.y,
+          this.player.x,
+          this.player.y
+        );
+        
+        // Determine speed based on distance
+        const speed = distance > runDistance ? 200 : 100;
+        
+        // Move towards player (only X axis to stay on sidewalk)
+        this.lunaGirl.setVelocityX(Math.cos(angle) * speed);
+        
+        // Update animation based on direction and speed
+        const velocityX = this.lunaGirl.body.velocity.x;
+        
+        if (Math.abs(velocityX) > 5) {
+          const animKey = distance > runDistance ? 'girl_run' : 'girl_walk';
+          const direction = velocityX > 0 ? 'right' : 'left';
+          const fullAnimKey = `${animKey}_${direction}`;
+          
+          if (this.lunaGirl.anims.currentAnim?.key !== fullAnimKey) {
+            this.lunaGirl.play(fullAnimKey);
+          }
+        }
+      } else {
+        // Stop moving when close enough
+        this.lunaGirl.setVelocityX(0);
+        
+        // Play idle animation if not already
+        if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
+          // Determine direction based on player position
+          const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
+          this.lunaGirl.play(`girl_idle_${direction}`);
+        }
+      }
+    }
   }
 
   /**
@@ -250,12 +505,15 @@ export default class LockStockScene extends Phaser.Scene {
    */
   createBuilding() {
     const buildingX = 1000;
-    const buildingY = 150;
+    const buildingY = 20;
     const buildingWidth = 400;
     const buildingHeight = 400;
     
     // Building container
     const building = this.add.graphics();
+    
+    // Create elevated platform for the building with better visuals
+    this.createBuildingPlatform(1200, 485, buildingWidth, 130);
     
     // Main building (brick color)
     building.fillStyle(0x8B4513, 1);
@@ -405,6 +663,252 @@ export default class LockStockScene extends Phaser.Scene {
         yoyo: true,
         repeat: -1
       });
+    });
+  }
+
+  /**
+   * Create obstacles that player must navigate
+   */
+  createObstacles() {
+    this.obstacles = [];
+    const sidewalkY = GAME_CONFIG.height - 140;
+    
+    // Obstacle 1: Wooden crates (low, can jump over)
+    const crate1 = this.createCrate(400, sidewalkY - 25, 50, 50);
+    this.obstacles.push(crate1);
+    
+    // Obstacle 2: Stack of two crates (medium height)
+    const crateStack = this.createCrateStack(450, sidewalkY - 50, 50, 50);
+    this.obstacles.push(crateStack);
+    
+    // Obstacle 3: Raised platform (must jump onto)
+    const platform1 = this.createPlatform(700, sidewalkY - 100, 120, 20);
+    this.obstacles.push(platform1);
+    
+    // Obstacle 4: Trash can
+    const trashCan = this.createTrashCan(850, sidewalkY - 40);
+    this.obstacles.push(trashCan);
+    
+    // Obstacle 5: Another platform (higher)
+    const platform2 = this.createPlatform(950, sidewalkY - 150, 100, 20);
+    this.obstacles.push(platform2);
+  }
+
+  /**
+   * Create a wooden crate obstacle
+   */
+  createCrate(x, y, width, height) {
+    const crate = this.add.rectangle(x, y, width, height, 0x8B4513);
+    crate.setStrokeStyle(3, 0x654321);
+    this.physics.add.existing(crate, true); // Static body
+    
+    // Add wood grain details
+    const grain = this.add.graphics();
+    grain.lineStyle(2, 0x654321, 0.5);
+    
+    // Vertical lines
+    for (let i = 0; i < 3; i++) {
+      const offsetX = x - width / 2 + (width / 3) * i;
+      grain.beginPath();
+      grain.moveTo(offsetX, y - height / 2);
+      grain.lineTo(offsetX, y + height / 2);
+      grain.strokePath();
+    }
+    
+    // Horizontal lines
+    for (let i = 0; i < 3; i++) {
+      const offsetY = y - height / 2 + (height / 3) * i;
+      grain.beginPath();
+      grain.moveTo(x - width / 2, offsetY);
+      grain.lineTo(x + width / 2, offsetY);
+      grain.strokePath();
+    }
+    
+    return crate;
+  }
+
+  /**
+   * Create a stack of crates
+   */
+  createCrateStack(x, y, width, height) {
+    // Create container for the stack
+    const stack = this.add.rectangle(x, y, width, height * 2, 0x8B4513);
+    stack.setStrokeStyle(3, 0x654321);
+    this.physics.add.existing(stack, true);
+    
+    // Draw crate divisions
+    const line = this.add.line(x, y, -width / 2, 0, width / 2, 0, 0x654321);
+    line.setLineWidth(3);
+    
+    return stack;
+  }
+
+  /**
+   * Create a platform
+   */
+  createPlatform(x, y, width, height) {
+    const platform = this.add.rectangle(x, y, width, height, 0x808080);
+    platform.setStrokeStyle(2, 0x606060);
+    this.physics.add.existing(platform, true);
+    
+    // Add platform texture
+    const texture = this.add.graphics();
+    texture.lineStyle(1, 0x606060, 0.5);
+    
+    for (let i = 0; i < width / 20; i++) {
+      const lineX = x - width / 2 + i * 20;
+      texture.beginPath();
+      texture.moveTo(lineX, y - height / 2);
+      texture.lineTo(lineX, y + height / 2);
+      texture.strokePath();
+    }
+    
+    return platform;
+  }
+
+  /**
+   * Create a trash can obstacle
+   */
+  createTrashCan(x, y) {
+    const canWidth = 40;
+    const canHeight = 60;
+    
+    // Trash can body
+    const can = this.add.rectangle(x, y, canWidth, canHeight, 0x404040);
+    can.setStrokeStyle(2, 0x202020);
+    this.physics.add.existing(can, true);
+    
+    // Lid
+    const lid = this.add.ellipse(x, y - canHeight / 2 - 5, canWidth + 10, 15, 0x505050);
+    lid.setStrokeStyle(2, 0x303030);
+    
+    return can;
+  }
+
+  /**
+   * Create an elevated building platform with detailed styling
+   */
+  /**
+   * Create NPCs in the LockStock scene
+   */
+  createNPCs() {
+    const lunaData = getNPCData('jojoGirl');
+    
+    // Position lunaGirl near the player at spawn
+    const lunaX = 250;
+    const lunaY = 200;
+    
+    this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
+    this.lunaGirl.setDepth(lunaData.depth);
+    
+    // Make Luna stand idle facing right
+    this.lunaGirl.play('girl_idle_right');
+    
+    // Add collision with ground only (not obstacles)
+    this.physics.add.collider(this.lunaGirl, this.groundPlatform);
+    
+    // Luna following state
+    this.lunaFollowEnabled = true;
+    this.lunaIsFloating = false;
+    this.lunaFloatTarget = null;
+  }
+
+  createBuildingPlatform(x, y, width, height) {
+    const platformX = x;
+    const platformY = y;
+    
+    // Create graphics for detailed platform
+    const platformGraphics = this.add.graphics();
+    
+    // Shadow/depth effect (darker layer behind)
+    platformGraphics.fillStyle(0x2a2a2a, 0.8);
+    platformGraphics.fillRect(platformX - width / 2 + 5, platformY - height / 2 + 5, width, height);
+    
+    // Main platform body (stone/concrete color)
+    platformGraphics.fillStyle(0x707070, 1);
+    platformGraphics.fillRect(platformX - width / 2, platformY - height / 2, width, height);
+    
+    // Top surface (lighter, more polished)
+    platformGraphics.fillStyle(0x858585, 1);
+    platformGraphics.fillRect(platformX - width / 2, platformY - height / 2, width, 20);
+    
+    // Add stone texture pattern
+    platformGraphics.lineStyle(1, 0x5a5a5a, 0.3);
+    
+    // Horizontal lines for stone layers
+    for (let i = 0; i < height; i += 25) {
+      platformGraphics.beginPath();
+      platformGraphics.moveTo(platformX - width / 2, platformY - height / 2 + i);
+      platformGraphics.lineTo(platformX + width / 2, platformY - height / 2 + i);
+      platformGraphics.strokePath();
+    }
+    
+    // Vertical cracks/seams
+    for (let i = 0; i < width; i += 80) {
+      const lineX = platformX - width / 2 + i;
+      const offset = (i / 80) % 2 === 0 ? 0 : 12;
+      
+      platformGraphics.beginPath();
+      platformGraphics.moveTo(lineX, platformY - height / 2 + offset);
+      platformGraphics.lineTo(lineX, platformY + height / 2);
+      platformGraphics.strokePath();
+    }
+    
+    // Border/edge detail
+    platformGraphics.lineStyle(3, 0x4a4a4a, 1);
+    platformGraphics.strokeRect(platformX - width / 2, platformY - height / 2, width, height);
+    
+    // Top edge highlight
+    platformGraphics.lineStyle(2, 0x9a9a9a, 0.8);
+    platformGraphics.beginPath();
+    platformGraphics.moveTo(platformX - width / 2, platformY - height / 2);
+    platformGraphics.lineTo(platformX + width / 2, platformY - height / 2);
+    platformGraphics.strokePath();
+    
+    // Add decorative corner pillars
+    this.createCornerPillars(platformX, platformY, width, height);
+    
+    // Create physics body for collision (invisible rectangle)
+    const platformCollider = this.add.rectangle(platformX, platformY, width, height);
+    platformCollider.setAlpha(0); // Make invisible since we have graphics
+    this.physics.add.existing(platformCollider, true);
+    
+    // Add to obstacles array so player can collide with it
+    this.obstacles.push(platformCollider);
+  }
+
+  /**
+   * Create decorative corner pillars for the platform
+   */
+  createCornerPillars(platformX, platformY, platformWidth, platformHeight) {
+    const pillarWidth = 30;
+    const pillarHeight = platformHeight + 20;
+    
+    const positions = [
+      { x: platformX - platformWidth / 2 + pillarWidth / 2, y: platformY },
+      { x: platformX + platformWidth / 2 - pillarWidth / 2, y: platformY }
+    ];
+    
+    positions.forEach(pos => {
+      const pillar = this.add.graphics();
+      
+      // Pillar body
+      pillar.fillStyle(0x5a5a5a, 1);
+      pillar.fillRect(pos.x - pillarWidth / 2, pos.y - pillarHeight / 2, pillarWidth, pillarHeight);
+      
+      // Pillar highlights
+      pillar.fillStyle(0x6a6a6a, 1);
+      pillar.fillRect(pos.x - pillarWidth / 2, pos.y - pillarHeight / 2, 8, pillarHeight);
+      
+      // Pillar border
+      pillar.lineStyle(2, 0x3a3a3a, 1);
+      pillar.strokeRect(pos.x - pillarWidth / 2, pos.y - pillarHeight / 2, pillarWidth, pillarHeight);
+      
+      // Pillar cap (decorative top)
+      pillar.fillStyle(0x7a7a7a, 1);
+      pillar.fillRect(pos.x - pillarWidth / 2 - 5, pos.y - pillarHeight / 2 - 10, pillarWidth + 10, 10);
+      pillar.lineStyle(2, 0x4a4a4a, 1);
+      pillar.strokeRect(pos.x - pillarWidth / 2 - 5, pos.y - pillarHeight / 2 - 10, pillarWidth + 10, 10);
     });
   }
 }

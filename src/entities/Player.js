@@ -25,6 +25,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpPower = PLAYER_CONFIG.jumpPower;
     this.isClimbing = false;
     this.currentLadder = null;
+    this.isDancing = false; // Flag to prevent movement during dancing
     
     // Set up input
     this.cursors = scene.input.keyboard.createCursorKeys();
@@ -39,6 +40,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
    * Update player state - call this in scene's update()
    */
   update() {
+    // Skip update if player is dancing
+    if (this.isDancing) {
+      return;
+    }
+    
     if (this.isClimbing) {
       this.handleClimbing();
     } else {
