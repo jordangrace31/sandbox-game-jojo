@@ -39,6 +39,15 @@ export const NPC_DATA = {
     ],
     depth: 998
   },
+
+  piepsie: {
+    name: "Piepsie Wiepsie",
+    dialogues: [
+    ],
+    quests: [
+    ],
+    depth: 998
+  },
   
   blacksmith: {
     name: "Marcus",

@@ -142,6 +142,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('rope', 'assets/images/rope-png.png');
     this.load.image('bed', 'assets/images/bed-png.png');
     this.load.image('tent', 'assets/images/tent-png.png');
+    this.load.image('lock-stock-logo', 'assets/images/lock-stock-logo.png');
 
     this.load.atlas(
       'hamilton_emote',
@@ -155,11 +156,11 @@ export default class PreloadScene extends Phaser.Scene {
       'assets/atlases/hamilton_idle.json'
     );
 
-    this.load.atlas(
-      'piepsie_tail',
-      'assets/images/piepsie-tail.png',
-      'assets/atlases/piepsie_tail.json'
-    );
+    // Load Piepsie sprites
+    this.load.image('piepsie-tail-1', 'assets/images/piepsie-tail-1.png');
+    this.load.image('piepsie-tail-2', 'assets/images/piepsie-tail-2.png');
+    this.load.image('piepsie-hearts-1', 'assets/images/piepsie-hearts-1.png');
+    this.load.image('piepsie-hearts-2', 'assets/images/piepsie-hearts-2.png');
   }
 
   /**

@@ -245,14 +245,35 @@ export default class AnimationManager {
    * Create Piepsie tail animation
    */
   createPiepsieTailAnimation() {
+    // Create piepsie-tail animation
     this.scene.anims.create({
-      key: 'piepsie_tail',
-      frames: this.scene.anims.generateFrameNames('piepsie_tail', {
-        prefix: 'piepsie_tail_',
-        start: 0,
-        end: 2
-      }),
+      key: 'piepsie-tail',
+      frames: [
+        { key: 'piepsie-tail-1' },
+        { key: 'piepsie-tail-2' }
+      ],
+      frameRate: 4,
+      repeat: -1
+    });
+
+    this.scene.anims.create({
+      key: 'piepsie-tail-happy',
+      frames: [
+        { key: 'piepsie-tail-1' },
+        { key: 'piepsie-tail-2' }
+      ],
       frameRate: 8,
+      repeat: -1
+    });
+
+    // Create piepsie-hearts animation
+    this.scene.anims.create({
+      key: 'piepsie-hearts',
+      frames: [
+        { key: 'piepsie-hearts-1' },
+        { key: 'piepsie-hearts-2' }
+      ],
+      frameRate: 2,
       repeat: -1
     });
   }

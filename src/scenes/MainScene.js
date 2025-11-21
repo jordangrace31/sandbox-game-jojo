@@ -36,6 +36,8 @@ export default class MainScene extends Phaser.Scene {
     this.hamiltonQuestCompleted = false;
     this.campQuestTriggered = false;
     this.campQuestCompleted = false;
+    this.lockStockQuestTriggered = false;
+    this.lockStockQuestCompleted = false;
     
     // Player stats
     this.playerStats = {
@@ -140,6 +142,8 @@ export default class MainScene extends Phaser.Scene {
     // Check for camp quest trigger
     this.checkCampQuestTrigger();
     
+    // Check for Lock Stock scene trigger
+    this.checkLockStockTrigger();
   }
 
   /**
@@ -380,14 +384,15 @@ export default class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.hamilton, this.groundPlatform);
 
-    // Create Piepsie tail sprite
-    const piepsieX = 600;
-    const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
-    
-    this.piepsieTail = this.add.sprite(piepsieX, piepsieY, 'piepsie_tail');
-    this.piepsieTail.setOrigin(0.5);
-    this.piepsieTail.setDepth(850);
-    this.piepsieTail.play('piepsie_tail');
+    const piepsieData = getNPCData('piepsie');
+    const piepsieX = 740;
+    const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
+
+    this.piepsie = new NPC(this, piepsieX, piepsieY, 'piepsie-tail-1', piepsieData);
+    this.piepsie.setDepth(piepsieData.depth);
+    this.piepsie.setScale(0.18);
+    this.piepsie.play('piepsie-tail');
+    this.physics.add.collider(this.piepsie, this.groundPlatform);
   }
 
   /**
@@ -583,6 +588,46 @@ export default class MainScene extends Phaser.Scene {
       this.campQuestTriggered = true;
       this.startCampQuest();
     }
+  }
+
+  /**
+   * Check if player has reached the Lock Stock scene trigger zone
+   */
+  checkLockStockTrigger() {
+    if (!this.player || this.lockStockQuestCompleted || this.lockStockQuestTriggered) return;
+    
+    const triggerX = 300;
+    const triggerRange = 50;
+    const distance = Math.abs(this.player.x - triggerX);
+    
+    // Show prompt when in range
+    if (distance < triggerRange) {
+      this.lockStockQuestTriggered = true;
+      this.startLockStockScene();
+    }
+  }
+
+  /**
+   * Start the Lock Stock scene by switching to LockStockScene
+   */
+  startLockStockScene() {
+    // Fade out main scene music
+    this.musicManager.stop(1000);
+    
+    // Fade out main scene
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    
+    // Wait for fade out to complete before switching scenes
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // Pause main scene
+      this.scene.pause('MainScene');
+      
+      // Start Lock Stock scene
+      this.scene.launch('LockStockScene');
+      
+      // Reset the camera fade for when we return
+      this.cameras.main.resetFX();
+    });
   }
 
   /**

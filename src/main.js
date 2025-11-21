@@ -9,6 +9,7 @@ import IntroScene from './scenes/IntroScene.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import MainScene from './scenes/MainScene.js';
 import CampScene from './scenes/CampScene.js';
+import LockStockScene from './scenes/LockStockScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -20,7 +21,8 @@ const config = {
     // IntroScene,
     PreloadScene,
     MainScene,
-    CampScene
+    CampScene,
+    LockStockScene
   ]
 };
 
