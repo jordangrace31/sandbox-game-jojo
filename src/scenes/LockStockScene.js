@@ -17,7 +17,7 @@ export default class LockStockScene extends Phaser.Scene {
 
   create() {
     // Set world bounds (smaller scene)
-    this.sceneWidth = 1600;
+    this.sceneWidth = 1400;
     this.sceneHeight = 700;
     this.physics.world.setBounds(0, 0, this.sceneWidth, this.sceneHeight);
     
@@ -32,8 +32,8 @@ export default class LockStockScene extends Phaser.Scene {
     this.createSidewalk();
     this.createBuilding();
     
-    // Create the player
-    this.player = new Player(this, 200, 550);
+    // Create the player (spawned from above to fall onto sidewalk)
+    this.player = new Player(this, 200, 200);
     this.player.setDepth(1000);
     
     // Set up camera
@@ -131,10 +131,9 @@ export default class LockStockScene extends Phaser.Scene {
     
     for (let i = 0; i < strips; i++) {
       const progress = i / strips;
-      // Light blue sky
       const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-        Phaser.Display.Color.HexStringToColor('#87CEEB'), // Sky blue at top
-        Phaser.Display.Color.HexStringToColor('#B0E0E6'), // Powder blue at bottom
+        Phaser.Display.Color.HexStringToColor('#0a1628'), 
+        Phaser.Display.Color.HexStringToColor('#1a3a52'),
         strips,
         i
       );
@@ -144,7 +143,32 @@ export default class LockStockScene extends Phaser.Scene {
     }
     
     gradient.setScrollFactor(0);
+
+    this.createStars();
   }
+
+    /**
+   * Create stars in the night sky
+   */
+    createStars() {
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * 1400;
+        const y = Math.random() * 300;
+        const size = 1 + Math.random() * 2;
+        
+        const star = this.add.circle(x, y, size, 0xffffff, 0.8);
+        star.setScrollFactor(0);
+        
+        // Twinkle effect
+        this.tweens.add({
+          targets: star,
+          alpha: 0.3,
+          duration: 1000 + Math.random() * 2000,
+          yoyo: true,
+          repeat: -1
+        });
+      }
+    }
 
   /**
    * Create the street (road)
@@ -155,7 +179,7 @@ export default class LockStockScene extends Phaser.Scene {
     // Dark grey asphalt
     const street = this.add.graphics();
     street.fillStyle(0x3a3a3a, 1);
-    street.fillRect(0, streetY, 1600, 120);
+    street.fillRect(0, streetY, 1400, 120);
     
     // Add some road markings
     this.createRoadMarkings(streetY);
@@ -172,7 +196,7 @@ export default class LockStockScene extends Phaser.Scene {
     const dashLength = 30;
     const gapLength = 20;
     
-    for (let x = 0; x < 1600; x += dashLength + gapLength) {
+    for (let x = 0; x < 1400; x += dashLength + gapLength) {
       markings.beginPath();
       markings.moveTo(x, centerY);
       markings.lineTo(x + dashLength, centerY);
@@ -188,9 +212,9 @@ export default class LockStockScene extends Phaser.Scene {
     
     // Create main sidewalk platform (physics body)
     this.groundPlatform = this.add.rectangle(
-      800,
-      sidewalkY + 10,
-      1600,
+      700,
+      sidewalkY + 15,
+      1400,
       40,
       0x8B8B8B // Light grey
     );
@@ -199,13 +223,13 @@ export default class LockStockScene extends Phaser.Scene {
     // Sidewalk surface with tiles
     const sidewalk = this.add.graphics();
     sidewalk.fillStyle(0xc0c0c0, 1);
-    sidewalk.fillRect(0, sidewalkY - 20, 1600, 40);
+    sidewalk.fillRect(0, sidewalkY - 20, 1400, 40);
     
     // Add tile lines
     sidewalk.lineStyle(2, 0x909090, 0.5);
     
     // Vertical lines
-    for (let x = 0; x < 1600; x += 80) {
+    for (let x = 0; x < 1400; x += 80) {
       sidewalk.beginPath();
       sidewalk.moveTo(x, sidewalkY - 20);
       sidewalk.lineTo(x, sidewalkY + 20);
@@ -216,7 +240,7 @@ export default class LockStockScene extends Phaser.Scene {
     for (let y = sidewalkY - 20; y < sidewalkY + 20; y += 20) {
       sidewalk.beginPath();
       sidewalk.moveTo(0, y);
-      sidewalk.lineTo(1600, y);
+      sidewalk.lineTo(1400, y);
       sidewalk.strokePath();
     }
   }
@@ -225,8 +249,8 @@ export default class LockStockScene extends Phaser.Scene {
    * Create the building on the right side with the Lock Stock sign
    */
   createBuilding() {
-    const buildingX = 1200;
-    const buildingY = 200;
+    const buildingX = 1000;
+    const buildingY = 150;
     const buildingWidth = 400;
     const buildingHeight = 400;
     
