@@ -93,14 +93,9 @@ export default class LockStockScene extends Phaser.Scene {
       this.scene.stop('LockStockScene');
       this.scene.resume('MainScene');
       
-      // Fade back in to MainScene and restart music
+      // Fade back in to MainScene (music will restart via resume event)
       if (mainScene) {
         mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
-        
-        // Restart music when returning
-        if (mainScene.musicManager) {
-          mainScene.musicManager.play('dear_katara', 0.5, true, 2000);
-        }
       }
     });
   }

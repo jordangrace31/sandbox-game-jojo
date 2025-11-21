@@ -26,14 +26,20 @@ export default class MusicManager {
     }
 
     // Stop current music if playing
+    const shouldDelay = this.currentMusic && fadeInDuration > 0;
     if (this.currentMusic) {
       this.stop(fadeInDuration > 0 ? fadeInDuration : 0);
     }
 
     // Wait for fade out before starting new track
-    const delay = fadeInDuration > 0 && this.currentMusic ? fadeInDuration : 0;
+    const delay = shouldDelay ? fadeInDuration : 0;
     
     this.scene.time.delayedCall(delay, () => {
+      // Safety check: ensure scene is still active
+      if (!this.scene || !this.scene.sound) {
+        return;
+      }
+      
       this.currentMusic = this.scene.sound.add(key, {
         volume: fadeInDuration > 0 ? 0 : volume * this.globalVolume,
         loop: loop
@@ -44,16 +50,23 @@ export default class MusicManager {
 
       // Fade in if requested
       if (fadeInDuration > 0) {
+        const musicToFade = this.currentMusic;
         this.scene.tweens.add({
-          targets: this.currentMusic,
+          targets: musicToFade,
           volume: volume * this.globalVolume,
           duration: fadeInDuration,
-          ease: 'Linear'
+          ease: 'Linear',
+          onUpdate: (tween) => {
+            // Safety check during tween
+            if (!musicToFade || musicToFade.pendingDestroy) {
+              tween.stop();
+            }
+          }
         });
       }
 
       // Apply mute state if necessary
-      if (this.isMuted) {
+      if (this.isMuted && this.currentMusic) {
         this.currentMusic.setVolume(0);
       }
     });
@@ -67,25 +80,34 @@ export default class MusicManager {
     if (!this.currentMusic) return;
 
     if (fadeOutDuration > 0) {
+      // Store reference to music to stop
+      const musicToStop = this.currentMusic;
+      
+      // Clear references immediately to prevent race conditions
+      this.currentMusic = null;
+      this.currentKey = null;
+      
       this.scene.tweens.add({
-        targets: this.currentMusic,
+        targets: musicToStop,
         volume: 0,
         duration: fadeOutDuration,
         ease: 'Linear',
         onComplete: () => {
-          if (this.currentMusic) {
-            this.currentMusic.stop();
-            this.currentMusic.destroy();
-            this.currentMusic = null;
-            this.currentKey = null;
+          if (musicToStop && !musicToStop.pendingDestroy) {
+            musicToStop.stop();
+            musicToStop.destroy();
           }
         }
       });
     } else {
-      this.currentMusic.stop();
-      this.currentMusic.destroy();
+      const musicToStop = this.currentMusic;
       this.currentMusic = null;
       this.currentKey = null;
+      
+      if (musicToStop && !musicToStop.pendingDestroy) {
+        musicToStop.stop();
+        musicToStop.destroy();
+      }
     }
   }
 
@@ -113,16 +135,23 @@ export default class MusicManager {
    * @param {number} fadeDuration - Duration to fade to new volume (ms)
    */
   setVolume(volume, fadeDuration = 0) {
-    if (!this.currentMusic) return;
+    if (!this.currentMusic || this.currentMusic.pendingDestroy) return;
 
     const targetVolume = volume * this.globalVolume;
 
     if (fadeDuration > 0) {
+      const musicToFade = this.currentMusic;
       this.scene.tweens.add({
-        targets: this.currentMusic,
+        targets: musicToFade,
         volume: targetVolume,
         duration: fadeDuration,
-        ease: 'Linear'
+        ease: 'Linear',
+        onUpdate: (tween) => {
+          // Safety check during tween
+          if (!musicToFade || musicToFade.pendingDestroy) {
+            tween.stop();
+          }
+        }
       });
     } else {
       this.currentMusic.setVolume(targetVolume);
@@ -135,7 +164,7 @@ export default class MusicManager {
    */
   setGlobalVolume(volume) {
     this.globalVolume = volume;
-    if (this.currentMusic) {
+    if (this.currentMusic && !this.currentMusic.pendingDestroy) {
       this.currentMusic.setVolume(this.currentMusic.volume * this.globalVolume);
     }
   }
@@ -146,7 +175,7 @@ export default class MusicManager {
    */
   setMute(mute) {
     this.isMuted = mute;
-    if (this.currentMusic) {
+    if (this.currentMusic && !this.currentMusic.pendingDestroy) {
       if (mute) {
         this.currentMusic.setVolume(0);
       } else {
@@ -181,9 +210,17 @@ export default class MusicManager {
         volume: 0,
         duration: duration,
         ease: 'Linear',
+        onUpdate: (tween) => {
+          // Safety check during tween
+          if (!oldMusic || oldMusic.pendingDestroy) {
+            tween.stop();
+          }
+        },
         onComplete: () => {
-          oldMusic.stop();
-          oldMusic.destroy();
+          if (oldMusic && !oldMusic.pendingDestroy) {
+            oldMusic.stop();
+            oldMusic.destroy();
+          }
         }
       });
     }
@@ -197,14 +234,21 @@ export default class MusicManager {
     this.currentKey = newKey;
     this.currentMusic.play();
 
+    const musicToFade = this.currentMusic;
     this.scene.tweens.add({
-      targets: this.currentMusic,
+      targets: musicToFade,
       volume: volume * this.globalVolume,
       duration: duration,
-      ease: 'Linear'
+      ease: 'Linear',
+      onUpdate: (tween) => {
+        // Safety check during tween
+        if (!musicToFade || musicToFade.pendingDestroy) {
+          tween.stop();
+        }
+      }
     });
 
-    if (this.isMuted) {
+    if (this.isMuted && this.currentMusic) {
       this.currentMusic.setVolume(0);
     }
   }

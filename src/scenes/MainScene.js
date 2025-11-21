@@ -97,10 +97,16 @@ export default class MainScene extends Phaser.Scene {
     
     // Set up scene resume event to restart music when returning from other scenes
     this.events.on('resume', () => {
-      // Restart music when scene resumes (e.g., after CampScene)    
-      this.musicManager.stop(0);
+      // Restart music when scene resumes (e.g., after CampScene)
       if (this.musicManager) {
-        this.musicManager.play('dear_katara', 0.5, true, 2000);
+        // Stop any currently playing music
+        this.musicManager.stop(0);
+        // Small delay to ensure cleanup is complete before starting new music
+        this.time.delayedCall(100, () => {
+          if (this.musicManager) {
+            this.musicManager.play('dear_katara', 0.5, true, 2000);
+          }
+        });
       }
     });
   }
