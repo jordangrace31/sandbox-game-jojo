@@ -23,9 +23,11 @@ export default class MainScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, WORLD_CONFIG.width, WORLD_CONFIG.height);
     
     // Initialize systems
-    this.animationManager = new AnimationManager(this);
-    this.animationManager.createPlayerAnimations();
-    this.animationManager.createNPCAnimations();
+    if (!this.animationManager) {
+      this.animationManager = new AnimationManager(this);
+      this.animationManager.createPlayerAnimations();
+      this.animationManager.createNPCAnimations();
+    }
     
     this.dialogueManager = new DialogueManager(this);
     this.questManager = new QuestManager(this);
@@ -38,6 +40,12 @@ export default class MainScene extends Phaser.Scene {
     this.campQuestCompleted = false;
     this.lockStockQuestTriggered = false;
     this.lockStockQuestCompleted = false;
+
+    this.lunaX = 4300;
+    this.hamiltonX = 10900;
+    this.piepsieX = 6000;
+    this.campX = 13000;
+    this.lockStockX = 7000;
     
     // Player stats - store in registry to share across scenes
     if (!this.registry.has('playerStats')) {
@@ -83,6 +91,9 @@ export default class MainScene extends Phaser.Scene {
     // Track if dialog has been completed with Luna
     this.lunaDialogCompleted = false;
     
+    // Track player death state
+    this.playerIsDead = false;
+    
     // Obstacles (will be created after Luna dialog)
     this.rockObstacle = null;
     this.ladder = null;
@@ -90,10 +101,10 @@ export default class MainScene extends Phaser.Scene {
     this.platform2 = null;
     this.platform3 = null;
     
-    // // Show welcome dialog after a short delay
-    // this.time.delayedCall(500, () => {
-    //   this.showWelcomeDialog();
-    // });
+    // Show welcome dialog after a short delay
+    this.time.delayedCall(500, () => {
+      this.showWelcomeDialog();
+    });
 
     // Start background music with fade in
     this.musicManager.play('dear_katara', 0.5, true, 2000);
@@ -380,7 +391,7 @@ export default class MainScene extends Phaser.Scene {
     const lunaData = getNPCData('jojoGirl');
     
     // Position Luna on the right side of the world
-    const lunaX = 1300;
+    const lunaX = this.lunaX;
     const lunaY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
     this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
@@ -393,7 +404,7 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
 
     const hamiltonData = getNPCData('hamilton');
-    const hamiltonX = 2900;
+    const hamiltonX = this.hamiltonX;
     const hamiltonY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
     this.hamilton = new NPC(this, hamiltonX, hamiltonY, 'hamilton_idle', hamiltonData);
@@ -405,7 +416,7 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.hamilton, this.groundPlatform);
 
     const piepsieData = getNPCData('piepsie');
-    const piepsieX = 5000;
+    const piepsieX = this.piepsieX;
     const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
 
     this.piepsie = new NPC(this, piepsieX, piepsieY, 'piepsie-tail-1', piepsieData);
@@ -422,7 +433,7 @@ export default class MainScene extends Phaser.Scene {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
     // Create dark green beer bottle near the tree
-    const bottleX = 3100;
+    const bottleX = 9200;
     const bottleY = groundY - 10;
     
     // Create beer bottle using basic shapes
@@ -601,7 +612,7 @@ export default class MainScene extends Phaser.Scene {
   checkCampQuestTrigger() {
     if (!this.player || this.campQuestTriggered || this.campQuestCompleted) return;
     
-    const triggerX = 6000;
+    const triggerX = this.campX;
     const triggerRange = 50;
     
     if (Math.abs(this.player.x - triggerX) < triggerRange) {
@@ -616,7 +627,7 @@ export default class MainScene extends Phaser.Scene {
   checkLockStockTrigger() {
     if (!this.player || this.lockStockQuestCompleted || this.lockStockQuestTriggered) return;
     
-    const triggerX = 4000;
+    const triggerX = this.lockStockX;
     const triggerRange = 50;
     const distance = Math.abs(this.player.x - triggerX);
     
@@ -1145,7 +1156,7 @@ export default class MainScene extends Phaser.Scene {
   showWelcomeDialog() {
     this.dialogueManager.startDialogue(
       'Narrator',
-      "Hi Jojo! It's been the wonderful adventure so far... maybe we can recap?"
+      "The mechanics of this game are pretty simple. Use the arrow keys to move and the space bar to jump."
     );
   }
 
@@ -1155,7 +1166,7 @@ export default class MainScene extends Phaser.Scene {
   createObstacles() {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
-    this.rockObstacle = this.add.container(1600, groundY - 20);
+    this.rockObstacle = this.add.container(this.lunaX + 300, groundY - 20);
     
     const boulder = this.add.ellipse(0, 0, 120, 80, 0x696969);
     const shadow = this.add.ellipse(0, 35, 120, 20, 0x000000, 0.3);
@@ -1173,60 +1184,197 @@ export default class MainScene extends Phaser.Scene {
 
     const platform1X = 1900; 
     const platform1Y = groundY - 100; 
-      
-    this.platform1 = this.add.sprite(platform1X, platform1Y, 'platform', 'platform_0');
-    this.platform1.setOrigin(0.5);
-    this.platform1.setDepth(800);
 
-    this.physics.add.existing(this.platform1, true);
-    this.physics.add.collider(this.player, this.platform1);
-
-    const imagePlatform2X = 2200; 
-    const imagePlatform2Y = groundY - 180; 
-      
-    this.imagePlatform2 = this.add.sprite(imagePlatform2X, imagePlatform2Y, 'platform', 'platform_1');
-    this.imagePlatform2.setOrigin(0.5);
-    this.imagePlatform2.setDepth(800);
-
-    this.physics.add.existing(this.imagePlatform2, true);
-    this.physics.add.collider(this.player, this.imagePlatform2);
+    this.platform1 = this.createPlatform(platform1X, platform1Y);
+    this.smallPlatform = this.createPlatform(1600, groundY - 40, 'platform_3');
+    this.platform2 = this.createPlatform(2200, groundY - 180, 'platform_1');
    
     const treeX = platform1X - 700; 
     const treeY = groundY - 75; 
     
-    this.tree = this.add.sprite(treeX, treeY, 'background', 'tree');
-    this.tree.setOrigin(0.5);
-    this.tree.setDepth(800);
-    this.tree.setScale(1.5);
+    this.tree = this.createTree(treeX, treeY, 1.5);
+
+    this.spikes = this.createSpikes(2400, groundY + 10, 200);
 
 
     const postX = 200; 
     const postY = groundY; 
       
-    this.post = this.add.sprite(postX, postY, 'background', 'post_0');
-    this.post.setOrigin(0.5);
-    this.post.setDepth(800);
-    this.post.setScale(1.5);
+    this.post = this.createPost(postX, postY, 1.5);
 
     // Add scene trigger markers
     // Camp Quest trigger marker at x=3400
-    const campTriggerX = 6000;
+    const campTriggerX = this.campX;
     const campTriggerY = groundY;
     
-    this.campTriggerMarker = this.add.sprite(campTriggerX, campTriggerY, 'background', 'post_0');
-    this.campTriggerMarker.setOrigin(0.5);
-    this.campTriggerMarker.setDepth(800);
-    this.campTriggerMarker.setScale(1.5);
+    this.campTriggerMarker = this.createPost(campTriggerX, campTriggerY, 1.5);
 
     // Lock Stock Scene trigger marker at x=4000
-    const lockStockTriggerX = 4000;
+    const lockStockTriggerX = this.lockStockX;
     const lockStockTriggerY = groundY;
     
-    this.lockStockTriggerMarker = this.add.sprite(lockStockTriggerX, lockStockTriggerY, 'background', 'post_0');
-    this.lockStockTriggerMarker.setOrigin(0.5);
-    this.lockStockTriggerMarker.setDepth(800);
-    this.lockStockTriggerMarker.setScale(1.5);
+    this.lockStockTriggerMarker = this.createPost(lockStockTriggerX, lockStockTriggerY, 1.5);
 
+  }
+
+  createPlatform(x, y, texture = 'platform_0') {
+    const platform = this.add.sprite(x, y, 'platform', texture);
+    platform.setOrigin(0.5);
+    platform.setDepth(800); 
+
+    this.physics.add.existing(platform, true);
+    this.physics.add.collider(this.player, platform);
+
+    return platform;
+  }
+
+  createTree(x, y, scale = 1.5) {
+    const tree = this.add.sprite(x, y, 'background', 'tree');
+    tree.setOrigin(0.5);
+    tree.setDepth(800);
+    tree.setScale(scale);
+
+    return tree;
+  }
+
+  createPost(x, y, scale = 1.5) {
+    const post = this.add.sprite(x, y, 'background', 'post_0');
+    post.setOrigin(0.5);
+    post.setDepth(800);
+    post.setScale(scale);
+
+    return post;
+  }
+
+  /**
+   * Create a layer of spikes on the ground
+   * @param {number} x - Starting x position
+   * @param {number} y - Y position (ground level)
+   * @param {number} length - Length/width of the spike layer in pixels
+   */
+  createSpikes(x, y, length) {
+    // Create container for the spike layer
+    const spikesContainer = this.add.container(x, y);
+    
+    // Spike dimensions
+    const spikeWidth = 20;
+    const spikeHeight = 30;
+    const spikeCount = Math.floor(length / spikeWidth);
+    
+    // Create multiple spike triangles
+    for (let i = 0; i < spikeCount; i++) {
+      const spikeX = i * spikeWidth;
+      
+      // Create spike triangle using graphics
+      const spike = this.add.graphics();
+      spike.fillStyle(0x666666, 1); // Dark gray base
+      
+      // Draw triangle
+      spike.beginPath();
+      spike.moveTo(spikeX, 0); // Bottom left
+      spike.lineTo(spikeX + spikeWidth / 2, -spikeHeight); // Top point
+      spike.lineTo(spikeX + spikeWidth, 0); // Bottom right
+      spike.closePath();
+      spike.fillPath();
+      
+      // Add highlight for 3D effect
+      spike.fillStyle(0x888888, 0.7);
+      spike.beginPath();
+      spike.moveTo(spikeX, 0);
+      spike.lineTo(spikeX + spikeWidth / 2, -spikeHeight);
+      spike.lineTo(spikeX + spikeWidth / 4, -spikeHeight / 2);
+      spike.closePath();
+      spike.fillPath();
+      
+      // Add sharp tip highlight
+      spike.fillStyle(0xAAAAAA, 0.9);
+      spike.fillCircle(spikeX + spikeWidth / 2, -spikeHeight, 2);
+      
+      spikesContainer.add(spike);
+    }
+    
+    // Add physics body to the container
+    this.physics.add.existing(spikesContainer);
+    spikesContainer.body.setSize(length, spikeHeight);
+    spikesContainer.body.setOffset(0, -spikeHeight);
+    spikesContainer.body.setAllowGravity(false);
+    spikesContainer.body.setImmovable(true);
+    
+    spikesContainer.setDepth(850);
+    
+    // Set up overlap detection with player (deadly!)
+    this.physics.add.overlap(this.player, spikesContainer, () => {
+      this.handlePlayerDeath();
+    });
+    
+    return spikesContainer;
+  }
+
+  /**
+   * Handle player death and restart the game
+   */
+  handlePlayerDeath() {
+    // Prevent multiple death triggers
+    if (this.playerIsDead) return;
+    this.playerIsDead = true;
+    
+    // Stop player movement
+    this.player.setVelocity(0, 0);
+    this.player.setTint(0xff0000); // Red tint for death effect
+    
+    // Play death animation effect
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0,
+      angle: 360,
+      y: this.player.y - 50,
+      duration: 800,
+      ease: 'Power2'
+    });
+    
+    // Show death message
+    const deathText = this.add.text(
+      this.cameras.main.width / 2,
+      this.cameras.main.height / 2,
+      'You Died!',
+      {
+        fontSize: '48px',
+        fill: '#ff0000',
+        backgroundColor: '#000000',
+        padding: { x: 30, y: 15 },
+        fontStyle: 'bold'
+      }
+    );
+    deathText.setOrigin(0.5);
+    deathText.setScrollFactor(0);
+    deathText.setDepth(3000);
+    deathText.setAlpha(0);
+    
+    // Fade in death text
+    this.tweens.add({
+      targets: deathText,
+      alpha: 1,
+      duration: 500
+    });
+    
+    // Stop background music with fade out
+    if (this.musicManager) {
+      this.musicManager.stop(1000);
+    }
+    
+    // Restart the scene after delay
+    this.time.delayedCall(2000, () => {
+      // Fade out camera
+      this.cameras.main.fadeOut(1000, 0, 0, 0);
+      
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        // Reset death flag
+        this.playerIsDead = false;
+        
+        // Restart the scene
+        this.scene.restart();
+      });
+    });
   }
 }
 
