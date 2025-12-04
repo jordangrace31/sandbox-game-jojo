@@ -1182,6 +1182,15 @@ export default class MainScene extends Phaser.Scene {
     
     this.physics.add.collider(this.player, this.rockObstacle);
 
+    this.createPlatform(this.lunaX - 1200, groundY - 40, 'platform_3');
+    this.createPlatform(this.lunaX - 1000, groundY - 150, 'platform_3');
+    this.createPlatform(this.lunaX - 800, groundY - 200, 'platform_2');
+    this.createPlatform(this.lunaX - 500, groundY - 250, 'platform_3');
+
+    this.createSpikes(this.lunaX - 1200, groundY + 20, 700);
+
+    // this.createRock(this.lunaX - 500, groundY - 20, 1.3);
+
     const platform1X = 1900; 
     const platform1Y = groundY - 100; 
 
@@ -1194,7 +1203,7 @@ export default class MainScene extends Phaser.Scene {
     
     this.tree = this.createTree(treeX, treeY, 1.5);
 
-    this.spikes = this.createSpikes(2400, groundY + 10, 200);
+    this.spikes = this.createSpikes(2250, groundY + 20, 150);
 
 
     const postX = 200; 
@@ -1215,6 +1224,25 @@ export default class MainScene extends Phaser.Scene {
     
     this.lockStockTriggerMarker = this.createPost(lockStockTriggerX, lockStockTriggerY, 1.5);
 
+  }
+
+  createRock(x, y, scale = 1.5) {
+    const rock = this.add.container(x, y);
+    const boulder = this.add.ellipse(0, 0, 120, 80, 0x696969);
+    const shadow = this.add.ellipse(0, 35, 120, 20, 0x000000, 0.3);
+    const highlight1 = this.add.ellipse(-15, -15, 40, 30, 0x808080);
+    const highlight2 = this.add.ellipse(-25, -5, 25, 20, 0x909090);
+    
+    rock.add([shadow, boulder, highlight1, highlight2]);
+    
+    // Add physics to rock (static body - won't fall)
+    this.physics.add.existing(rock, true);
+    rock.body.setSize(80 * scale, 80 * scale);
+    rock.body.setOffset(-30 * scale, -10 * scale); // Center the collision box
+    rock.setDepth(900);
+    rock.setScale(scale);
+    
+    this.physics.add.collider(this.player, rock);
   }
 
   createPlatform(x, y, texture = 'platform_0') {
