@@ -100,6 +100,7 @@ export default class MainScene extends Phaser.Scene {
     this.platform = null;
     this.platform2 = null;
     this.platform3 = null;
+    this.obstaclesCreated = false; // Guard flag to prevent multiple creation
     
     // Show welcome dialog after a short delay
     this.time.delayedCall(500, () => {
@@ -143,7 +144,11 @@ export default class MainScene extends Phaser.Scene {
       this.dialogueManager.update();
     }
 
-    this.createObstacles();
+    // Create obstacles only once
+    if (!this.obstaclesCreated) {
+      this.createObstacles();
+      this.obstaclesCreated = true;
+    }
     
     // Update NPCs
     if (this.lunaGirl) {
