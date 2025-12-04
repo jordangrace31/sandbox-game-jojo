@@ -128,6 +128,12 @@ export default class PreloadScene extends Phaser.Scene {
     );
 
     this.load.atlas(
+      'jojo_girl_jump',
+      'assets/images/jojo_girl_jump.png',
+      'assets/atlases/jojo_girl_jump.json'
+    );
+
+    this.load.atlas(
       'jojo_girl_emote',
       'assets/images/jojo_girl_emote.png',
       'assets/atlases/jojo_girl_emote.json'
@@ -181,8 +187,8 @@ export default class PreloadScene extends Phaser.Scene {
     );
 
     // Load Piepsie sprites
-    this.load.image('piepsie-tail-1', 'assets/images/piepsie-tail-1.png');
-    this.load.image('piepsie-tail-2', 'assets/images/piepsie-tail-2.png');
+    this.load.image('piepsie-tail-1', 'assets/images/piepsie-tail-1-bgr.png');
+    this.load.image('piepsie-tail-2', 'assets/images/piepsie-tail-2-bgr.png');
     this.load.image('piepsie-hearts-1', 'assets/images/piepsie-hearts-1.png');
     this.load.image('piepsie-hearts-2', 'assets/images/piepsie-hearts-2.png');
   }

@@ -90,10 +90,10 @@ export const NPC_DATA = {
   sirAllister: {
     name: "Sir Allister",
     dialogues: [
-      "Good evening kind sir! Welcome to the Lock Stock and Beer.",
+      "Good evening kind sir! Welcome to Lock Stock and Beer.",
       "This establishment has the finest spirits in town.",
       "Before you leave, you must honor our tradition...",
-      "Dance with me for 20 seconds! Hold D to dance!"
+      "Dance with me for 20 seconds... Hold D to dance!"
     ],
     quests: [
       {

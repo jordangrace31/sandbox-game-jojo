@@ -76,6 +76,13 @@ export default class LockStockScene extends Phaser.Scene {
     // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
     
+    // Show Luna's welcome dialogue after fade-in completes
+    this.cameras.main.once('camerafadeincomplete', () => {
+      if (this.lunaGirl && this.dialogueManager) {
+        this.dialogueManager.startDialogue('Jordan', 'Sorry I just had a leg day so I\'m learning how to run and jump again.');
+      }
+    });
+    
     // Set up scene resume event (when returning from ClubScene)
     this.events.on('resume', () => {
       // Music continues playing - no need to restart it
@@ -84,13 +91,9 @@ export default class LockStockScene extends Phaser.Scene {
         this.cameras.main.resetFX();
       }
       
-      // Reset luna's floating state if returning from club
+      // Reset luna's jump timer if returning from club
       if (this.lunaGirl) {
-        this.lunaIsFloating = false;
-        this.lunaFloatTarget = null;
-        if (this.lunaGirl.body) {
-          this.lunaGirl.body.setAllowGravity(true);
-        }
+        this.lunaLastJumpTime = 0;
       }
     });
   }
@@ -245,112 +248,92 @@ export default class LockStockScene extends Phaser.Scene {
   updateLunaFollowBehavior() {
     if (!this.lunaGirl || !this.player) return;
     
-    const buildingX = 1050; // X position where building area starts
-    const buildingPlatformY = 390; // Y position of building platform
+    // Define jump trigger points based on obstacle positions
+    // These are the X positions where Luna needs to jump (same as where player needs to jump)
+    const jumpTriggers = [
+      { x: 325, range: 20, type: 'onto' },     // Before crate at 400
+      { x: 510, range: 20, type: 'onto' },     // Before platform at 700
+      { x: 830, range: 15, type: 'over' },     // Before trash can at 850
+      { x: 930, range: 20, type: 'onto' },      // Before platform at 950
+      { x: 1030, range: 20, type: 'onto' }     // Before platform at 1050
+    ];
     
-    // Check if player is near the building and luna should float up
-    if (this.lunaGirl.x > buildingX && !this.lunaIsFloating) {
-      // Start floating luna up to the building platform
-      this.lunaIsFloating = true;
-      this.lunaFloatTarget = { x: 1150, y: buildingPlatformY };
-      
-      // Disable gravity while floating
-      this.lunaGirl.body.setAllowGravity(false);
-      this.lunaGirl.setVelocityY(0);
-      
-      // Play idle animation during float
-      this.lunaGirl.play('girl_idle_right');
-    }
+    // Calculate distance to player
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.lunaGirl.x,
+      this.player.y
+    );
     
-    // Handle floating behavior
-    if (this.lunaIsFloating && this.lunaFloatTarget) {
-      const distanceToTarget = Phaser.Math.Distance.Between(
-        this.lunaGirl.x,
-        this.lunaGirl.y,
-        this.lunaFloatTarget.x,
-        this.lunaFloatTarget.y
-      );
+    const followDistance = 80; // Stay this far from player
+    const runDistance = 200; // Start running if further than this
+    const jumpCooldown = 50; // Minimum time between jumps (ms)
+    
+    if (distance > followDistance) {
+      // Calculate direction to player
+      const velocityX = this.player.x > this.lunaGirl.x ? 1 : -1;
       
-      if (distanceToTarget > 5) {
-        // Move towards target position
-        const angle = Phaser.Math.Angle.Between(
-          this.lunaGirl.x,
-          this.lunaGirl.y,
-          this.lunaFloatTarget.x,
-          this.lunaFloatTarget.y
-        );
-        
-        const floatSpeed = 150;
-        this.lunaGirl.setVelocity(
-          Math.cos(angle) * floatSpeed,
-          Math.sin(angle) * floatSpeed
-        );
-      } else {
-        // Reached target, stop floating
-        this.lunaGirl.setVelocity(0, 0);
-        this.lunaGirl.setPosition(this.lunaFloatTarget.x, this.lunaFloatTarget.y);
+      // Determine speed based on distance
+      const speed = 150;
+      
+      // Move towards player (only X axis to stay on sidewalk)
+      this.lunaGirl.setVelocityX(velocityX * speed);
+      
+      // Check if Luna should jump at any trigger point
+      const currentTime = this.time.now;
+      const timeSinceLastJump = currentTime - this.lunaLastJumpTime;
+      
+      if (timeSinceLastJump > jumpCooldown && this.lunaGirl.body.touching.down) {
+        // Check each jump trigger
+        for (const trigger of jumpTriggers) {
+          // Check if Luna is approaching this trigger point (within range)
+          const distanceToTrigger = Math.abs(this.lunaGirl.x - trigger.x);
+          const isApproaching = velocityX > 0 ? 
+            (this.lunaGirl.x < trigger.x && this.lunaGirl.x > trigger.x - 30) :
+            (this.lunaGirl.x > trigger.x && this.lunaGirl.x < trigger.x + 30);
+          
+          if (distanceToTrigger < trigger.range && isApproaching) {
+            // Make Luna jump!
+            this.lunaGirl.setVelocityY(-500);
+            this.lunaLastJumpTime = currentTime;
+            break; // Only trigger one jump at a time
+          }
+        }
       }
       
-      return; // Skip normal following while floating
-    }
-    
-    // If player goes back from building, reset luna
-    if (this.lunaIsFloating && this.player.x < buildingX - 100) {
-      this.lunaIsFloating = false;
-      this.lunaFloatTarget = null;
-      this.lunaGirl.body.setAllowGravity(true);
-    }
-    
-    // Normal following behavior (when not floating)
-    if (!this.lunaIsFloating) {
-      // Calculate distance to player
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.lunaGirl.x,
-        this.lunaGirl.y
-      );
+      // Update animation based on direction and speed
+      const absVelocityX = Math.abs(this.lunaGirl.body.velocity.x);
       
-      const followDistance = 80; // Stay this far from player
-      const runDistance = 200; // Start running if further than this
-      
-      if (distance > followDistance) {
-        // Calculate direction to player
-        const angle = Phaser.Math.Angle.Between(
-          this.lunaGirl.x,
-          this.lunaGirl.y,
-          this.player.x,
-          this.player.y
-        );
+      if (absVelocityX > 5) {
+        const direction = velocityX > 0 ? 'right' : 'left';
         
-        // Determine speed based on distance
-        const speed = distance > runDistance ? 200 : 100;
-        
-        // Move towards player (only X axis to stay on sidewalk)
-        this.lunaGirl.setVelocityX(Math.cos(angle) * speed);
-        
-        // Update animation based on direction and speed
-        const velocityX = this.lunaGirl.body.velocity.x;
-        
-        if (Math.abs(velocityX) > 5) {
-          const animKey = distance > runDistance ? 'girl_run' : 'girl_walk';
-          const direction = velocityX > 0 ? 'right' : 'left';
+        // Check if jumping (not touching ground)
+        if (!this.lunaGirl.body.touching.down) {
+          // Use girl jump animation
+          const jumpAnimKey = `girl_jump_${direction}`;
+          if (this.lunaGirl.anims.currentAnim?.key !== jumpAnimKey) {
+            this.lunaGirl.play(jumpAnimKey);
+          }
+        } else {
+          // Normal walk/run animation when on ground
+          const animKey = 'girl_walk';
           const fullAnimKey = `${animKey}_${direction}`;
           
           if (this.lunaGirl.anims.currentAnim?.key !== fullAnimKey) {
             this.lunaGirl.play(fullAnimKey);
           }
         }
-      } else {
-        // Stop moving when close enough
-        this.lunaGirl.setVelocityX(0);
-        
-        // Play idle animation if not already
-        if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
-          // Determine direction based on player position
-          const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
-          this.lunaGirl.play(`girl_idle_${direction}`);
-        }
+      }
+    } else {
+      // Stop moving when close enough
+      this.lunaGirl.setVelocityX(0);
+      
+      // Play idle animation if not already
+      if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
+        // Determine direction based on player position
+        const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
+        this.lunaGirl.play(`girl_idle_${direction}`);
       }
     }
   }
@@ -678,11 +661,11 @@ export default class LockStockScene extends Phaser.Scene {
     this.obstacles.push(crate1);
     
     // Obstacle 2: Stack of two crates (medium height)
-    const crateStack = this.createCrateStack(450, sidewalkY - 50, 50, 50);
+    const crateStack = this.createCrateStack(450, sidewalkY - 40, 50, 40);
     this.obstacles.push(crateStack);
     
     // Obstacle 3: Raised platform (must jump onto)
-    const platform1 = this.createPlatform(700, sidewalkY - 100, 120, 20);
+    const platform1 = this.createPlatform(650, sidewalkY - 100, 180, 20);
     this.obstacles.push(platform1);
     
     // Obstacle 4: Trash can
@@ -804,13 +787,19 @@ export default class LockStockScene extends Phaser.Scene {
     // Make Luna stand idle facing right
     this.lunaGirl.play('girl_idle_right');
     
-    // Add collision with ground only (not obstacles)
+    // Add collision with ground and obstacles
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
+    
+    // Add collisions with obstacles so Luna can land on platforms
+    if (this.obstacles) {
+      this.obstacles.forEach(obstacle => {
+        this.physics.add.collider(this.lunaGirl, obstacle);
+      });
+    }
     
     // Luna following state
     this.lunaFollowEnabled = true;
-    this.lunaIsFloating = false;
-    this.lunaFloatTarget = null;
+    this.lunaLastJumpTime = 0; // Track when Luna last jumped
   }
 
   createBuildingPlatform(x, y, width, height) {

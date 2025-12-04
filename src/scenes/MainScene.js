@@ -136,9 +136,6 @@ export default class MainScene extends Phaser.Scene {
     // Update player
     this.player.update();
     
-    // Update parallax clouds based on camera position
-    this.updateClouds();
-    
     // Update dialogue manager
     if (this.dialogueManager) {
       this.dialogueManager.update();
@@ -268,14 +265,6 @@ export default class MainScene extends Phaser.Scene {
     });
     
     return cloud;
-  }
-
-  /**
-   * Update cloud positions for parallax effect
-   */
-  updateClouds() {
-    // Clouds are automatically handled by scrollFactor
-    // This method reserved for future cloud animations (drift, etc.)
   }
 
   /**
@@ -424,11 +413,13 @@ export default class MainScene extends Phaser.Scene {
     const piepsieX = this.piepsieX;
     const piepsieY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
 
-    this.piepsie = new NPC(this, piepsieX, piepsieY, 'piepsie-tail-1', piepsieData);
+    this.piepsiePlatform = this.createPlatform(6000, piepsieY - 150, 'platform_1');
+
+    this.piepsie = new NPC(this, piepsieX, piepsieY - 300, 'piepsie-tail-1', piepsieData);
     this.piepsie.setDepth(piepsieData.depth);
-    this.piepsie.setScale(0.18);
+    this.piepsie.setScale(0.16);
     this.piepsie.play('piepsie-tail');
-    this.physics.add.collider(this.piepsie, this.groundPlatform);
+    this.physics.add.collider(this.piepsie, this.piepsiePlatform);
   }
 
   /**
@@ -975,7 +966,7 @@ export default class MainScene extends Phaser.Scene {
     
     // Calculate horizontal distance to player
     const distanceX = Math.abs(this.player.x - this.piepsie.x);
-    const proximityRange = 100;
+    const proximityRange = 200;
     
     if (distanceX < proximityRange) {
       // Player is close - play happy animation
@@ -1001,11 +992,11 @@ export default class MainScene extends Phaser.Scene {
       this.player.x,
       this.player.y,
       this.lunaGirl.x,
-      this.lunaGirl.y
+      this.player.y
     );
     
-    const followDistance = 80; // Stay this far from player
-    const runDistance = 200; // Start running if further than this
+    const followDistance = 60; // Stay this far from player
+    const runDistance = 120; // Start running if further than this
     
     if (distance > followDistance) {
       // Calculate direction to player
@@ -1017,7 +1008,7 @@ export default class MainScene extends Phaser.Scene {
       );
       
       // Determine speed based on distance
-      const speed = distance > runDistance ? 200 : 100;
+      const speed = distance > runDistance ? 120 : 80;
       
       // Move towards player
       this.lunaGirl.setVelocity(
@@ -1208,7 +1199,16 @@ export default class MainScene extends Phaser.Scene {
     
     this.tree = this.createTree(treeX, treeY, 1.5);
 
-    this.spikes = this.createSpikes(2250, groundY + 20, 150);
+    this.spikes = this.createSpikes(2250, groundY + 20, 200);
+
+    this.createSpikes(5500, groundY + 20, 150);
+    this.createPlatform(5400, groundY - 50, 'platform_2');
+    this.createPlatform(5500, groundY - 150, 'platform_2');
+    this.createPlatform(5400, groundY - 250, 'platform_2');
+    this.createPlatform(5500, groundY - 350, 'platform_2');
+    this.createPlatform(5700, groundY - 290, 'platform_3');
+    this.createPlatform(6300, groundY - 100, 'platform_0');
+    this.createTree(6350, groundY - 225, 1);
 
 
     const postX = 200; 

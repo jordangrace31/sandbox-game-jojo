@@ -36,6 +36,7 @@ export default class AnimationManager {
     this.createSirAllisterRunAnimations();
     this.createGirlEmoteAnimations();
     this.createPiepsieTailAnimation();
+    this.createGirlJumpAnimations();
   }
 
   /**
@@ -314,6 +315,27 @@ export default class AnimationManager {
     });
   }
 
+    /**
+   * Create jumping animations for all four directions
+   */
+    createGirlJumpAnimations() {
+      const directions = ['down', 'up', 'left', 'right'];
+      const prefixes = ['front', 'back', 'left', 'right'];
+  
+      directions.forEach((direction, index) => {
+        this.scene.anims.create({
+          key: `girl_jump_${direction}`,
+          frames: this.scene.anims.generateFrameNames('jojo_girl_jump', {
+            prefix: `jojo_girl_${prefixes[index]}_`,
+            start: 0,
+            end: 4
+          }),
+          frameRate: ANIMATION_CONFIG.jumpFrameRate,
+          repeat: 0
+        });
+      });
+    }
+
   /**
    * Create Piepsie tail animation
    */
@@ -325,7 +347,7 @@ export default class AnimationManager {
         { key: 'piepsie-tail-1' },
         { key: 'piepsie-tail-2' }
       ],
-      frameRate: 4,
+      frameRate: 2,
       repeat: -1
     });
 

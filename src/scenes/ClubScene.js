@@ -28,6 +28,10 @@ export default class ClubScene extends Phaser.Scene {
     // Initialize systems (no MusicManager - music continues while in club)
     this.animationManager = new AnimationManager(this);
     this.dialogueManager = new DialogueManager(this);
+
+        // Create the player
+    this.player = new Player(this, 200, 100);
+    this.player.setDepth(1000);
     
     // Create the club interior
     this.createWalls();
@@ -40,10 +44,6 @@ export default class ClubScene extends Phaser.Scene {
     
     // Create NPCs
     this.createNPCs();
-    
-    // Create the player
-    this.player = new Player(this, 200, 100);
-    this.player.setDepth(1000);
     
     // Set up camera
     this.cameras.main.setBounds(0, 0, this.sceneWidth, this.sceneHeight);
@@ -68,7 +68,7 @@ export default class ClubScene extends Phaser.Scene {
     this.isDancing = false;
     
     // Add exit prompt
-    this.createExitPrompt();
+    // this.createExitPrompt();
     
     // Create quest UI
     this.createQuestUI();
@@ -115,11 +115,11 @@ export default class ClubScene extends Phaser.Scene {
     // Check if quest is completed before allowing exit
     if (Phaser.Input.Keyboard.JustDown(this.exitKey)) {
       if (this.danceQuestCompleted) {
-        this.returnToMainScene();
+        this.returnToLockStockScene();
       } else if (this.danceQuestActive) {
         this.showQuestIncompleteMessage();
       } else {
-        this.returnToMainScene();
+        this.showQuestIncompleteMessage();
       }
     }
     
@@ -139,11 +139,11 @@ export default class ClubScene extends Phaser.Scene {
         
         if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
           if (this.danceQuestCompleted) {
-            this.returnToMainScene();
+            this.returnToLockStockScene();
           } else if (this.danceQuestActive) {
             this.showQuestIncompleteMessage();
           } else {
-            this.returnToMainScene();
+            this.showQuestIncompleteMessage();
           }
         }
       } else {
@@ -184,40 +184,26 @@ export default class ClubScene extends Phaser.Scene {
   }
 
   /**
-   * Return to Main Scene
+   * Return to Lock Stock Scene
    */
-  returnToMainScene() {
-    // Get scenes first
+  returnToLockStockScene() {
+    // Get LockStock scene
     const lockStockScene = this.scene.get('LockStockScene');
-    
-    // Stop LockStock music immediately (before scene transitions)
-    if (lockStockScene && lockStockScene.musicManager) {
-      lockStockScene.musicManager.stop(0); // Immediate stop, no fade
-    }
-    
-    // Also stop any music playing in this scene using Phaser's global sound manager
-    this.sound.stopAll();
     
     // Fade out
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
     // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Get main scene
-      const mainScene = this.scene.get('MainScene');
-      
-      // Stop both ClubScene and LockStockScene
+      // Stop ClubScene
       this.scene.stop('ClubScene');
+      
+      // Resume LockStockScene (music will continue playing)
       if (lockStockScene) {
-        this.scene.stop('LockStockScene');
-      }
-      
-      // Resume MainScene
-      this.scene.resume('MainScene');
-      
-      // Fade back in to MainScene (music will restart via resume event)
-      if (mainScene) {
-        mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.scene.resume('LockStockScene');
+        
+        // Fade back in to LockStockScene
+        lockStockScene.cameras.main.fadeIn(1000, 0, 0, 0);
       }
     });
   }
@@ -339,6 +325,18 @@ export default class ClubScene extends Phaser.Scene {
     
     // Add bottles on the bar
     this.createBottles(barX, barY);
+
+    // Create invisible physics body for collision
+    this.barCollider = this.add.rectangle(
+      barX + barWidth / 2,
+      barY + barHeight / 2,
+      barWidth,
+      barHeight,
+      0x000000,
+      0 // Invisible
+    );
+    this.physics.add.existing(this.barCollider, true); // true = static body
+    this.physics.add.collider(this.player, this.barCollider);
   }
 
   /**
@@ -379,6 +377,8 @@ export default class ClubScene extends Phaser.Scene {
       { x: 1050, y: 500 }
     ];
     
+    this.stoolColliders = [];
+    
     stoolPositions.forEach(pos => {
       const stool = this.add.graphics();
       
@@ -400,6 +400,19 @@ export default class ClubScene extends Phaser.Scene {
       // Stool base
       stool.fillStyle(0x3a3a3a, 1);
       stool.fillCircle(pos.x, pos.y + 85, 15);
+
+      // Create invisible physics body for collision
+      const stoolCollider = this.add.rectangle(
+        pos.x,
+        pos.y + 45, // Center of the stool vertically
+        30,
+        90, // Height of the stool
+        0x000000,
+        0 // Invisible
+      );
+      this.physics.add.existing(stoolCollider, true); // true = static body
+      this.physics.add.collider(this.player, stoolCollider);
+      this.stoolColliders.push(stoolCollider);
     });
   }
 
@@ -548,15 +561,16 @@ export default class ClubScene extends Phaser.Scene {
   createNPCs() {
     const sirAllisterData = getNPCData('sirAllister');
     
-    // Position Sir Allister near the bar (starting position)
-    const sirAllisterX = 1050;
-    const sirAllisterY = GAME_CONFIG.height - 230;
+    // Position Sir Allister on top of the bar (starting position)
+    const sirAllisterX = 1225; // Center of bar (barX + barWidth/2)
+    const sirAllisterY = 400; // On top of bar (barY - offset)
     
     this.sirAllister = new NPC(this, sirAllisterX, sirAllisterY, 'sir_allister_idle', sirAllisterData);
     this.sirAllister.setDepth(sirAllisterData.depth);
     
-    // Add collision with ground
+    // Add collision with ground and bar (so he can stand on top of it)
     this.physics.add.collider(this.sirAllister, this.groundPlatform);
+    this.physics.add.collider(this.sirAllister, this.barCollider);
     
     // State tracking for Sir Allister
     this.sirAllisterState = 'waiting'; // States: 'waiting', 'running', 'dialogue', 'idle'
@@ -696,7 +710,7 @@ export default class ClubScene extends Phaser.Scene {
       );
       
       // Determine speed based on distance
-      const speed = distance > runDistance ? 200 : 100;
+      const speed = 150;
       
       // Move towards player
       this.lunaGirl.setVelocity(
@@ -708,7 +722,7 @@ export default class ClubScene extends Phaser.Scene {
       const velocityX = this.lunaGirl.body.velocity.x;
       
       if (Math.abs(velocityX) > 5) {
-        const animKey = distance > runDistance ? 'girl_run' : 'girl_walk';
+        const animKey = 'girl_walk';
         const direction = velocityX > 0 ? 'right' : 'left';
         const fullAnimKey = `${animKey}_${direction}`;
         
@@ -1014,7 +1028,7 @@ export default class ClubScene extends Phaser.Scene {
       this.questWarningText = this.add.text(
         GAME_CONFIG.width / 2,
         GAME_CONFIG.height / 2,
-        'You must complete the dance quest before leaving!\nFind Sir Allister and hold D to dance!',
+        'You must find Sir Allister before you can leave...',
         {
           fontSize: '20px',
           fill: '#ff0000',
