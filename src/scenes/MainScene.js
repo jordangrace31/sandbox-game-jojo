@@ -96,6 +96,7 @@ export default class MainScene extends Phaser.Scene {
     
     // Obstacles (will be created after Luna dialog)
     this.rockObstacle = null;
+    this.spikes = null;
     this.ladder = null;
     this.platform = null;
     this.platform2 = null;
@@ -1016,6 +1017,9 @@ export default class MainScene extends Phaser.Scene {
         0 // Keep Y velocity at 0 since we have gravity
       );
       
+      // Check if Luna is near any obstacles
+      let nearObstacle = false;
+      
       // Check if Luna needs to jump over the rock
       if (this.rockObstacle) {
         const distanceToRock = Phaser.Math.Distance.Between(
@@ -1030,9 +1034,29 @@ export default class MainScene extends Phaser.Scene {
           if (!this.npcPopupDialogue) {
             this.showNPCPopupDialogue(this.lunaGirl, "Ek is a klein meisie so I don't need to jump over the rock.");
           }
-        } else {
-          this.hideNPCPopupDialogue();
+          nearObstacle = true;
         }
+      }
+
+      if (this.spikes) {
+        const distanceToSpikes = Phaser.Math.Distance.Between(
+          this.lunaGirl.x,
+          this.lunaGirl.y,
+          this.spikes.x,
+          this.spikes.y
+        );
+        
+        if (distanceToSpikes < 200 && this.lunaGirl.body.touching.down) {
+          if (!this.npcPopupDialogue) {
+            this.showNPCPopupDialogue(this.lunaGirl, "I'm so klein that the spikes don't hurt me.");
+          }
+          nearObstacle = true;
+        }
+      }
+      
+      // Only hide popup if not near any obstacle
+      if (!nearObstacle) {
+        this.hideNPCPopupDialogue();
       }
       
       // Update animation based on direction
@@ -1199,9 +1223,9 @@ export default class MainScene extends Phaser.Scene {
     
     this.tree = this.createTree(treeX, treeY, 1.5);
 
-    this.spikes = this.createSpikes(2250, groundY + 20, 200);
+    this.createSpikes(2250, groundY + 20, 200);
 
-    this.createSpikes(5500, groundY + 20, 150);
+    this.spikes = this.createSpikes(5500, groundY + 20, 150);
     this.createPlatform(5400, groundY - 50, 'platform_2');
     this.createPlatform(5500, groundY - 150, 'platform_2');
     this.createPlatform(5400, groundY - 250, 'platform_2');
