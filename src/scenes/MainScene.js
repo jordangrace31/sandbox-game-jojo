@@ -1253,6 +1253,23 @@ export default class MainScene extends Phaser.Scene {
     
     this.lockStockTriggerMarker = this.createPost(lockStockTriggerX, lockStockTriggerY, 1.5);
 
+
+    // these are the obstacles that are created after the player has completed the lock stock quest
+    // platform 0 is the big one - 3 is the flat one - 2 is the small one
+    this.createSpikes(7500, groundY + 20, 170);
+    this.createPlatform(7800, groundY - 50, 'platform_0');
+    this.createPlatform(7950, groundY - 50, 'platform_2');
+    this.createPlatform(7450, groundY - 50, 'platform_3');
+    this.createPlatform(7900, groundY - 200, 'platform_2');
+    this.createPlatform(8000, groundY - 300, 'platform_2');
+
+    this.createPlatform(8200, groundY - 290, 'platform_1');
+    this.createPlatform(8550, groundY - 290, 'platform_3');
+    this.createSpikes(8550, groundY - 305, 30, 20, 10);
+    this.createPlatform(8900, groundY - 270, 'platform_1');
+    this.createTree(8910, groundY - 392, 1.2, 'platform', 'tree_2');
+
+
   }
 
   createRock(x, y, scale = 1.5) {
@@ -1285,8 +1302,8 @@ export default class MainScene extends Phaser.Scene {
     return platform;
   }
 
-  createTree(x, y, scale = 1.5) {
-    const tree = this.add.sprite(x, y, 'background', 'tree');
+  createTree(x, y, scale = 1.5, type = 'background', treeSprite = 'tree') {
+    const tree = this.add.sprite(x, y, type, treeSprite);
     tree.setOrigin(0.5);
     tree.setDepth(800);
     tree.setScale(scale);
@@ -1309,13 +1326,11 @@ export default class MainScene extends Phaser.Scene {
    * @param {number} y - Y position (ground level)
    * @param {number} length - Length/width of the spike layer in pixels
    */
-  createSpikes(x, y, length) {
+  createSpikes(x, y, length, spikeHeight = 30, spikeWidth = 20) {
     // Create container for the spike layer
     const spikesContainer = this.add.container(x, y);
     
     // Spike dimensions
-    const spikeWidth = 20;
-    const spikeHeight = 30;
     const spikeCount = Math.floor(length / spikeWidth);
     
     // Create multiple spike triangles
@@ -1361,16 +1376,13 @@ export default class MainScene extends Phaser.Scene {
     
     // Set up overlap detection with player (deadly!)
     this.physics.add.overlap(this.player, spikesContainer, () => {
-      this.handlePlayerDeath();
+      this.handlePlayerDeath(x - 50, 50);
     });
     
     return spikesContainer;
   }
 
-  /**
-   * Handle player death and restart the game
-   */
-  handlePlayerDeath() {
+  handlePlayerDeath(x, y) {
     // Prevent multiple death triggers
     if (this.playerIsDead) return;
     this.playerIsDead = true;
@@ -1414,22 +1426,33 @@ export default class MainScene extends Phaser.Scene {
       duration: 500
     });
     
-    // Stop background music with fade out
-    if (this.musicManager) {
-      this.musicManager.stop(1000);
-    }
-    
-    // Restart the scene after delay
+    // Respawn after delay
     this.time.delayedCall(2000, () => {
-      // Fade out camera
-      this.cameras.main.fadeOut(1000, 0, 0, 0);
+      // Fade out death text
+      this.tweens.add({
+        targets: deathText,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => deathText.destroy()
+      });
       
-      this.cameras.main.once('camerafadeoutcomplete', () => {
-        // Reset death flag
-        this.playerIsDead = false;
-        
-        // Restart the scene
-        this.scene.restart();
+      // Respawn player at safe location
+      this.player.setPosition(x, y);
+      this.player.setVelocity(0, 0);
+      this.player.clearTint();
+      this.player.setAlpha(1);
+      this.player.setAngle(0);
+      
+      // Reset death flag
+      this.playerIsDead = false;
+      
+      // Optional: Flash effect on respawn
+      this.tweens.add({
+        targets: this.player,
+        alpha: 0.3,
+        duration: 100,
+        yoyo: true,
+        repeat: 3
       });
     });
   }
