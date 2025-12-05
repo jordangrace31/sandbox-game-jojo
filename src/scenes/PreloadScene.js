@@ -155,6 +155,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('bed', 'assets/images/bed-png.png');
     this.load.image('tent', 'assets/images/tent-png.png');
     this.load.image('lock-stock-logo', 'assets/images/lock-stock-logo.png');
+    this.load.image('cloth', 'assets/images/sleep-blanket-bgr.png');
 
     this.load.atlas(
       'hamilton_emote',

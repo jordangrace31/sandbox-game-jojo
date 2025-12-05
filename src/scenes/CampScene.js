@@ -35,11 +35,12 @@ export default class CampScene extends Phaser.Scene {
       tarp: false,
       rope: false,
       cloth: false,
-      bed: false
+      bed: false,
+      bed2: false
     };
     
     this.itemsDelivered = [];
-    this.requiredOrder = ['tarp', 'rope', 'bed'];
+    this.requiredOrder = ['tarp', 'rope', 'cloth', 'bed', 'bed2'];
     this.currentHeldItem = null;
     
     // Create the world
@@ -48,7 +49,7 @@ export default class CampScene extends Phaser.Scene {
     this.createTree();
     
     // Create the player
-    this.player = new Player(this, 200, 550);
+    this.player = new Player(this, 100, 550);
     this.player.setDepth(1000);
     
     // Create Luna NPC
@@ -63,6 +64,8 @@ export default class CampScene extends Phaser.Scene {
     // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
     this.physics.add.collider(this.luna, this.groundPlatform);
+
+    this.createObstacles();
     
     // Set up interaction key
     this.interactionKey = this.input.keyboard.addKey('E');
@@ -88,6 +91,15 @@ export default class CampScene extends Phaser.Scene {
     // Update dialogue manager
     if (this.dialogueManager) {
       this.dialogueManager.update();
+    }
+    
+    // Update bed position to follow moving platform
+    if (this.movingPlatform && this.bed && this.bed.active) {
+      this.bed.y = this.movingPlatform.y - 40;
+    }
+
+    if (this.movingPlatform3 && this.rope && this.rope.active) {
+      this.rope.y = this.movingPlatform3.y - 40;
     }
     
     // Check for item interactions
@@ -227,7 +239,7 @@ export default class CampScene extends Phaser.Scene {
       depth: 999
     };
     
-    this.luna = new NPC(this, 300, 550, 'jojo_girl_idle', lunaData);
+    this.luna = new NPC(this, 200, 550, 'jojo_girl_idle', lunaData);
     this.luna.setDepth(999);
     this.luna.play('girl_idle_down');
   }
@@ -239,7 +251,8 @@ export default class CampScene extends Phaser.Scene {
     this.dialogueManager.startDialogue("Jordan", [
       "Oh no! It seems to be getting dark!",
       "We'll need somewhere to sleep tonight.",
-      "Maybe we can make something from the stuff we find here?"
+      "Maybe we can make something from the stuff we find here?",
+      "Remember to press E to pick up any items you see!"
     ]);
   }
 
@@ -250,7 +263,7 @@ export default class CampScene extends Phaser.Scene {
     const groundY = 620;
     
     // Dark green tarp (rectangle on ground)
-    this.tarp = this.add.container(400, groundY);
+    this.tarp = this.add.container(1000, groundY);
 
     // Base shape (use darker green with a gradient-like effect)
     const tarp = this.add.graphics();
@@ -327,6 +340,20 @@ export default class CampScene extends Phaser.Scene {
     this.rope.setDepth(900);
     this.rope.itemType = 'rope';
 
+    this.cloth = this.add.container(200, groundY - 490);
+    const clothSprite = this.add.tileSprite(0, 0, 260, 280, 'cloth');
+    clothSprite.setScale(0.4); // Scale down the large rope image
+    const clothLabel = this.add.text(0, -30, 'Cloth', {
+      fontSize: '12px',
+      fill: '#ffffff',
+      backgroundColor: '#000000',
+      padding: { x: 4, y: 2 }
+    });
+    clothLabel.setOrigin(0.5);
+    this.cloth.add([clothSprite, clothLabel]);
+    this.cloth.setDepth(900);
+    this.cloth.itemType = 'cloth';
+
     const bedLabel = this.add.text(0, -30, 'Bed', {
       fontSize: '12px',
       fill: '#ffffff',
@@ -335,14 +362,22 @@ export default class CampScene extends Phaser.Scene {
     });
     bedLabel.setOrigin(0.5);
 
-    this.bed = this.add.container(1000, groundY);
+    // Position bed on the moving platform (will be updated in createObstacles)
+    this.bed = this.add.container(300, groundY - 220);
     const bedSprite = this.add.tileSprite(0, 0, 2400, 1560, 'bed');
-    bedSprite.setScale(0.04);
+    bedSprite.setScale(0.03);
     this.bed.add([bedSprite, bedLabel]);
     this.bed.setDepth(900);
     this.bed.itemType = 'bed';
-    
-    this.collectibleItems = [this.tarp, this.rope, this.bed];
+
+    this.bed2 = this.add.container(500, groundY);
+    const bed2Sprite = this.add.tileSprite(0, 0, 2400, 1560, 'bed');
+    bed2Sprite.setScale(0.03);
+    this.bed2.add([bed2Sprite, bedLabel]);
+    this.bed2.setDepth(900);
+    this.bed2.itemType = 'bed2';
+
+    this.collectibleItems = [this.tarp, this.rope, this.bed, this.cloth, this.bed2];
   }
 
   /**
@@ -378,7 +413,7 @@ export default class CampScene extends Phaser.Scene {
     
     if (nearestItem) {
       if (!this.itemPrompt) {
-        this.showItemPrompt(nearestItem);
+        // this.showItemPrompt(nearestItem);
       }
       
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
@@ -445,7 +480,9 @@ export default class CampScene extends Phaser.Scene {
     const itemNames = {
       tarp: 'Tarp',
       rope: 'Rope',
-      bed: 'Bed'
+      bed: 'Bed',
+      cloth: 'Cloth',
+      bed2: 'Bed'
     };
     
     this.heldItemText = this.add.text(
@@ -640,6 +677,65 @@ export default class CampScene extends Phaser.Scene {
         }
       });
     });
+  }
+
+  createPlatform(x, y, texture = 'platform_0', isStatic = true) {
+    const platform = this.add.sprite(x, y, 'platform', texture);
+    platform.setOrigin(0.5);
+    platform.setDepth(800); 
+
+    this.physics.add.existing(platform, isStatic);
+    this.physics.add.collider(this.player, platform);
+
+    return platform;
+  }
+
+  createObstacles() {
+    const groundY = GAME_CONFIG.height - 80;
+
+    // Create moving platform
+    this.movingPlatform = this.createPlatform(300, groundY - 160, 'platform_3', false);
+    this.movingPlatform.body.setImmovable(true);
+    this.movingPlatform.body.setAllowGravity(false);
+
+    this.movingPlatform2 = this.createPlatform(480, groundY - 320, 'platform_3', false);
+    this.movingPlatform2.body.setImmovable(true);
+    this.movingPlatform2.body.setAllowGravity(false);
+
+    this.movingPlatform3 = this.createPlatform(800, groundY - 40, 'platform_3', false);
+    this.movingPlatform3.body.setImmovable(true);
+    this.movingPlatform3.body.setAllowGravity(false);
+
+    
+    // Add tween to move platform left and right
+    this.tweens.add({
+      targets: this.movingPlatform,
+      y: 300,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+
+    this.tweens.add({
+      targets: this.movingPlatform2,
+      y: 400,
+      duration: 2000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+    
+    this.tweens.add({
+      targets: this.movingPlatform3,
+      y: 400,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+
+    this.createPlatform(200, groundY - 400, 'platform_0');
   }
 }
 

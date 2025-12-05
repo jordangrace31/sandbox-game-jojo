@@ -42,9 +42,9 @@ export default class MainScene extends Phaser.Scene {
     this.lockStockQuestCompleted = false;
 
     this.lunaX = 4300;
-    this.hamiltonX = 10900;
+    this.hamiltonX = 8100;
     this.piepsieX = 6000;
-    this.campX = 13000;
+    this.campX = 9900;
     this.lockStockX = 7000;
     
     // Player stats - store in registry to share across scenes
@@ -430,8 +430,8 @@ export default class MainScene extends Phaser.Scene {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
     // Create dark green beer bottle near the tree
-    const bottleX = 9200;
-    const bottleY = groundY - 10;
+    const bottleX = 8980;
+    const bottleY = groundY - 380;
     
     // Create beer bottle using basic shapes
     this.beerBottle = this.add.container(bottleX, bottleY);
@@ -1009,7 +1009,7 @@ export default class MainScene extends Phaser.Scene {
       );
       
       // Determine speed based on distance
-      const speed = distance > runDistance ? 120 : 80;
+      const speed = distance > runDistance ? 140 : 80;
       
       // Move towards player
       this.lunaGirl.setVelocity(
@@ -1269,6 +1269,9 @@ export default class MainScene extends Phaser.Scene {
     this.createPlatform(8900, groundY - 270, 'platform_1');
     this.createTree(8910, groundY - 392, 1.2, 'platform', 'tree_2');
 
+    this.createSpikes(8950, groundY + 20, 40, 30, 20);
+    this.createSpikes(9350, groundY + 20, 20, 30, 20);
+    this.createSpikes(9550, groundY + 20, 40, 30, 20);
 
   }
 

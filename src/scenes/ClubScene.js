@@ -791,7 +791,7 @@ export default class ClubScene extends Phaser.Scene {
     if (!this.questText) return;
     
     if (this.danceQuestActive && !this.danceQuestCompleted) {
-      this.questText.setText(`Dance Quest: ${this.danceTime.toFixed(1)}s / ${this.danceTimeNeeded}s`);
+      this.questText.setText(`Dance with Sir Allister: ${this.danceTime.toFixed(1)}s / ${this.danceTimeNeeded}s`);
       this.questText.setVisible(true);
       
       // Show dance prompt if near Sir Allister
@@ -819,43 +819,58 @@ export default class ClubScene extends Phaser.Scene {
    * Handle dance mechanics
    */
   handleDanceMechanics(delta) {
-    if (!this.danceQuestActive || this.danceQuestCompleted) return;
-    
-    // Check if player is holding down D to dance
-    if (this.danceKey.isDown) {
-      // Check if close enough to Sir Allister
-      const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
-        this.sirAllister.x,
-        this.sirAllister.y
-      );
-      
-      if (distance < 150) {
-        // Start dancing if not already dancing
-        if (!this.isDancing) {
-          this.startDancing();
+    // Quest phase: dance with Sir Allister
+    if (this.danceQuestActive && !this.danceQuestCompleted) {
+      // Check if player is holding down D to dance
+      if (this.danceKey.isDown) {
+        // Check if close enough to Sir Allister
+        const distance = Phaser.Math.Distance.Between(
+          this.player.x,
+          this.player.y,
+          this.sirAllister.x,
+          this.sirAllister.y
+        );
+        
+        if (distance < 150) {
+          // Start dancing if not already dancing
+          if (!this.isDancing) {
+            this.startDancing();
+          }
+          
+          // Update dance timer while holding D
+          this.danceTime += delta / 1000; // Convert to seconds
+          
+          // Check if quest is completed
+          if (this.danceTime >= this.danceTimeNeeded) {
+            this.completeDanceQuest();
+          }
+          
+          this.updateQuestUI();
+        } else {
+          // Too far from Sir Allister
+          if (this.isDancing) {
+            this.stopDancing();
+          }
         }
-        
-        // Update dance timer while holding D
-        this.danceTime += delta / 1000; // Convert to seconds
-        
-        // Check if quest is completed
-        if (this.danceTime >= this.danceTimeNeeded) {
-          this.completeDanceQuest();
-        }
-        
-        this.updateQuestUI();
       } else {
-        // Too far from Sir Allister
+        // D key released - stop dancing
         if (this.isDancing) {
           this.stopDancing();
         }
       }
-    } else {
-      // D key released - stop dancing
-      if (this.isDancing) {
-        this.stopDancing();
+    }
+    // Post-quest: free dancing anytime
+    else if (this.danceQuestCompleted) {
+      if (this.danceKey.isDown) {
+        // Start dancing if not already dancing
+        if (!this.isDancing) {
+          this.startFreeDancing();
+        }
+      } else {
+        // D key released - stop dancing
+        if (this.isDancing) {
+          this.stopFreeDancing();
+        }
       }
     }
   }
@@ -908,6 +923,46 @@ export default class ClubScene extends Phaser.Scene {
     }
     
     this.updateQuestUI();
+  }
+
+  /**
+   * Start free dancing (after quest completion)
+   */
+  startFreeDancing() {
+    this.isDancing = true;
+    
+    // Disable player movement and animation updates
+    this.player.setVelocity(0, 0);
+    this.player.isDancing = true;
+    
+    // Play dance animations
+    this.player.play('player_emote', true);
+    
+    // Make lunaGirl dance too!
+    if (this.lunaGirl) {
+      this.lunaGirl.setVelocity(0, 0);
+      this.lunaGirl.play('girl_emote', true);
+    }
+  }
+
+  /**
+   * Stop free dancing (after quest completion)
+   */
+  stopFreeDancing() {
+    this.isDancing = false;
+    
+    // Re-enable player updates
+    this.player.isDancing = false;
+    
+    // Return to idle animations
+    this.player.play('idle_down', true);
+    
+    // Make lunaGirl return to idle
+    if (this.lunaGirl) {
+      // Determine direction based on player position
+      const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
+      this.lunaGirl.play(`girl_idle_${direction}`, true);
+    }
   }
 
   /**
