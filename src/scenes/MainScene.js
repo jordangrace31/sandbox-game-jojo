@@ -49,6 +49,9 @@ export default class MainScene extends Phaser.Scene {
     this.keys = null;
     this.keysPrompt = null;
 
+    // Luna state while using the car
+    this.lunaHiddenInCar = false;
+
     this.lunaX = 4300;
     this.hamiltonX = 8100;
     this.piepsieX = 6000;
@@ -509,8 +512,8 @@ export default class MainScene extends Phaser.Scene {
     this.bottleLabel.setDepth(901);
 
     // Create keys collectible near the car
-    const keysX = 11000;
-    const keysY = groundY;
+    const keysX = 11520;
+    const keysY = groundY - 500;
 
     this.keys = this.physics.add.sprite(keysX, keysY, 'keys');
     this.keys.setOrigin(0.5, 1); // Sit on the ground
@@ -1066,6 +1069,16 @@ export default class MainScene extends Phaser.Scene {
     // Snap car to player's horizontal position so "getting in" feels natural
     this.car.x = this.player.x;
 
+    // Hide Luna while the player is in the car
+    if (this.lunaGirl) {
+      this.lunaHiddenInCar = true;
+      this.lunaGirl.setVisible(false);
+      if (this.lunaGirl.body) {
+        this.lunaGirl.body.enable = false;
+        this.lunaGirl.setVelocity(0, 0);
+      }
+    }
+
     // Hide and disable player physics while inside car
     this.player.setVisible(false);
     if (this.player.body) {
@@ -1104,6 +1117,22 @@ export default class MainScene extends Phaser.Scene {
     if (this.carPrompt) {
       this.carPrompt.destroy();
       this.carPrompt = null;
+    }
+
+    // Bring Luna back in behind the player if she was hidden for the car
+    if (this.lunaGirl && this.lunaHiddenInCar) {
+      const followDistance = 60; // Match Luna's normal follow distance
+      const lunaX = this.player.x - followDistance;
+      const lunaY = this.player.y;
+
+      this.lunaGirl.setPosition(lunaX, lunaY);
+      this.lunaGirl.setVisible(true);
+      if (this.lunaGirl.body) {
+        this.lunaGirl.body.enable = true;
+        this.lunaGirl.setVelocity(0, 0);
+      }
+
+      this.lunaHiddenInCar = false;
     }
 
     // Switch camera back to follow the player
@@ -1314,6 +1343,14 @@ export default class MainScene extends Phaser.Scene {
    */
   updateLunaFollowBehavior() {
     if (!this.lunaGirl || !this.player || this.lunaGirl.isClimbing) return;
+
+    // Don't update follow behavior while Luna is hidden for the car
+    if (this.isInCar || this.lunaHiddenInCar) {
+      if (this.lunaGirl.body) {
+        this.lunaGirl.setVelocityX(0);
+      }
+      return;
+    }
     
     // Calculate distance to player
     const distance = Phaser.Math.Distance.Between(
@@ -1600,6 +1637,35 @@ export default class MainScene extends Phaser.Scene {
     this.createSpikes(9350, groundY + 20, 20, 30, 20);
     this.createSpikes(9550, groundY + 20, 40, 30, 20);
 
+    // after camp
+    this.createPlatform(10600, groundY - 50, 'platform_2');
+    this.createPlatform(10750, groundY - 150, 'platform_2');
+    this.createPlatform(10920, groundY - 250, 'platform_2');
+    this.createPlatform(11100, groundY - 350, 'platform_2');
+    this.createPlatform(11350, groundY - 350, 'platform_1');
+    this.createTree(11360, groundY - 462, 1.2, 'platform', 'tree_1');
+    this.createPlatform(11700, groundY - 350, 'platform_1');
+
+    this.createSpikes(10700, groundY + 20, 2200);
+    
+
+    const rock = this.add.container(13400, groundY - 20);
+    
+    const boulder2 = this.add.ellipse(0, 0, 120, 80, 0x696969);
+    const shadow2 = this.add.ellipse(0, 35, 120, 20, 0x000000, 0.3);
+    const highlight12 = this.add.ellipse(-15, -15, 40, 30, 0x808080);
+    const highlight22 = this.add.ellipse(-25, -5, 25, 20, 0x909090);
+    
+    rock.add([shadow2, boulder2, highlight12, highlight22]);
+    
+    // Add physics to rock (static body - won't fall)
+    this.physics.add.existing(rock, true);
+    rock.body.setSize(80, 80);
+    rock.setDepth(900);
+    
+    this.physics.add.collider(this.player, rock);
+    this.physics.add.collider(this.car, rock);
+
   }
 
   createRock(x, y, scale = 1.5) {
@@ -1702,7 +1768,7 @@ export default class MainScene extends Phaser.Scene {
     spikesContainer.body.setAllowGravity(false);
     spikesContainer.body.setImmovable(true);
     
-    spikesContainer.setDepth(850);
+    spikesContainer.setDepth(750);
     
     // Set up overlap detection with player (deadly!)
     this.physics.add.overlap(this.player, spikesContainer, () => {

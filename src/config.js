@@ -21,7 +21,7 @@ export const PLAYER_CONFIG = {
   climbSpeed: 200,
   jumpPower: -500,
   bounce: 0.1,
-  startX: 10000,
+  startX: 100,
   startY: 450,
   depth: 1000
 };
@@ -33,7 +33,7 @@ export const ANIMATION_CONFIG = {
 };
 
 export const WORLD_CONFIG = {
-  width: 14000,        // 4x wider than screen for exploration
+  width: 15000,        // 4x wider than screen for exploration
   height: 700,
   groundHeight: 80,   // Height of the ground/grass area
   skyColors: {
