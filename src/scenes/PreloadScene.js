@@ -156,6 +156,9 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('tent', 'assets/images/tent-png.png');
     this.load.image('lock-stock-logo', 'assets/images/lock-stock-logo.png');
     this.load.image('cloth', 'assets/images/sleep-blanket-bgr.png');
+    this.load.image('value-logo', 'assets/images/valuegroup-logo.png');
+    this.load.image('inhance-logo', 'assets/images/Inhance_Logo.png');
+    this.load.image('keys', 'assets/images/keys-bgr.png');
 
     this.load.atlas(
       'hamilton_emote',
@@ -185,6 +188,12 @@ export default class PreloadScene extends Phaser.Scene {
       'sir_allister_run',
       'assets/images/sir_allister_run.png',
       'assets/atlases/sir_allister_run.json'
+    );
+
+    this.load.atlas(
+      'cars',
+      'assets/images/vehicles-bgr.png',
+      'assets/atlases/cars_atlas.json'
     );
 
     // Load Piepsie sprites

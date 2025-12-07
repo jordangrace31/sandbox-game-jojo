@@ -41,6 +41,14 @@ export default class MainScene extends Phaser.Scene {
     this.lockStockQuestTriggered = false;
     this.lockStockQuestCompleted = false;
 
+    // Car / keys state
+    this.isInCar = false;
+    this.car = null;
+    this.carPrompt = null;
+    this.hasCarKeys = false;
+    this.keys = null;
+    this.keysPrompt = null;
+
     this.lunaX = 4300;
     this.hamiltonX = 8100;
     this.piepsieX = 6000;
@@ -71,6 +79,9 @@ export default class MainScene extends Phaser.Scene {
     
     // Create collectibles
     this.createCollectibles();
+
+    // Create car
+    this.createCar();
     
     // Create UI
     this.createStatsUI();
@@ -134,8 +145,12 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update() {
-    // Update player
-    this.player.update();
+    // Update player movement or car movement depending on state
+    if (this.isInCar) {
+      this.updateCarMovement();
+    } else {
+      this.player.update();
+    }
     
     // Update dialogue manager
     if (this.dialogueManager) {
@@ -166,18 +181,29 @@ export default class MainScene extends Phaser.Scene {
       this.piepsie.update();
       this.updatePiepsieAnimation();
     }
-    
-    // Check for NPC interactions
-    this.checkNPCInteractions();
-    
-    // Check for bottle collection
-    this.checkBottleCollection();
-    
-    // Check for camp quest trigger
-    this.checkCampQuestTrigger();
-    
-    // Check for Lock Stock scene trigger
-    this.checkLockStockTrigger();
+
+    // Handle car enter/exit interaction
+    if (this.car) {
+      this.updateCarInteraction();
+    }
+
+    // Only allow interactions and triggers when not inside the car
+    if (!this.isInCar) {
+      // Check for NPC interactions
+      this.checkNPCInteractions();
+      
+      // Check for bottle collection
+      this.checkBottleCollection();
+      
+      // Check for keys collection
+      this.checkKeysCollection();
+      
+      // Check for camp quest trigger
+      this.checkCampQuestTrigger();
+      
+      // Check for Lock Stock scene trigger
+      this.checkLockStockTrigger();
+    }
   }
 
   /**
@@ -481,6 +507,48 @@ export default class MainScene extends Phaser.Scene {
     });
     this.bottleLabel.setOrigin(0.5);
     this.bottleLabel.setDepth(901);
+
+    // Create keys collectible near the car
+    const keysX = 11000;
+    const keysY = groundY;
+
+    this.keys = this.physics.add.sprite(keysX, keysY, 'keys');
+    this.keys.setOrigin(0.5, 1); // Sit on the ground
+    this.keys.setDepth(900);
+    this.keys.setScale(0.08);
+    this.keys.body.setAllowGravity(false);
+
+    // Optional: small bobbing animation to make keys stand out
+    this.tweens.add({
+      targets: this.keys,
+      y: keysY - 10,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  /**
+   * Create the drivable car
+   */
+  createCar() {
+    const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight + 50;
+
+    // Position the car somewhere on the ground – adjust X as desired
+    const carX = 10400;
+    const carY = groundY;
+
+    this.car = this.physics.add.sprite(carX, carY, 'cars', 'car');
+    this.car.setOrigin(0.5, 1); // Align bottom of sprite with ground
+    this.car.setDepth(850);
+    this.car.setCollideWorldBounds(true);
+    this.car.body.setImmovable(false);
+
+    // Collide car with ground
+    this.physics.add.collider(this.car, this.groundPlatform);
+
+    this.carPrompt = null;
   }
 
   /**
@@ -781,6 +849,265 @@ export default class MainScene extends Phaser.Scene {
       delay: 2000,
       onComplete: () => notif.destroy()
     });
+  }
+
+  /**
+   * Check if player can collect the car keys
+   */
+  checkKeysCollection() {
+    if (!this.keys || this.hasCarKeys || !this.player) return;
+
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.keys.x,
+      this.keys.y
+    );
+
+    const collectionDistance = 80;
+
+    if (distance < collectionDistance) {
+      // Show collection prompt
+      if (!this.keysPrompt) {
+        this.keysPrompt = this.add.text(
+          this.keys.x,
+          this.keys.y - 80,
+          'Press E to pick up keys',
+          {
+            fontSize: '12px',
+            fill: '#ffff00',
+            backgroundColor: '#000000',
+            padding: { x: 6, y: 3 }
+          }
+        );
+        this.keysPrompt.setOrigin(0.5);
+        this.keysPrompt.setDepth(1001);
+      }
+
+      // Check if E key is pressed
+      if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
+        this.collectKeys();
+      }
+    } else {
+      // Hide prompt if player walks away
+      if (this.keysPrompt) {
+        this.keysPrompt.destroy();
+        this.keysPrompt = null;
+      }
+    }
+  }
+
+  /**
+   * Collect the car keys
+   */
+  collectKeys() {
+    this.hasCarKeys = true;
+
+    // Destroy the keys sprite with a small tween
+    if (this.keys) {
+      this.tweens.add({
+        targets: this.keys,
+        alpha: 0,
+        y: this.keys.y - 30,
+        duration: 500,
+        onComplete: () => {
+          this.keys.destroy();
+          this.keys = null;
+        }
+      });
+    }
+
+    if (this.keysPrompt) {
+      this.keysPrompt.destroy();
+      this.keysPrompt = null;
+    }
+
+    // Optional: add keys to player inventory for UI
+    if (this.playerStats && Array.isArray(this.playerStats.items)) {
+      this.playerStats.items.push('Car Keys');
+      this.updateStatsUI(false, false, true);
+    }
+
+    // Show notification
+    const notif = this.add.text(
+      this.cameras.main.width / 2,
+      80,
+      'Collected: Car Keys',
+      {
+        fontSize: '16px',
+        fill: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+      }
+    );
+    notif.setOrigin(0.5);
+    notif.setScrollFactor(0);
+    notif.setDepth(1001);
+
+    this.tweens.add({
+      targets: notif,
+      alpha: 0,
+      duration: 1000,
+      delay: 2000,
+      onComplete: () => notif.destroy()
+    });
+  }
+
+  /**
+   * Handle interaction with the car (entering / exiting)
+   */
+  updateCarInteraction() {
+    if (!this.car || !this.interactionKey) return;
+
+    // If already in the car, show "exit" prompt and handle exit
+    if (this.isInCar) {
+      const promptY = this.car.y - this.car.displayHeight - 10;
+
+      if (!this.carPrompt) {
+        this.carPrompt = this.add.text(
+          this.car.x,
+          promptY,
+          'Press E to exit car',
+          {
+            fontSize: '14px',
+            fill: '#ffffff',
+            backgroundColor: '#000000',
+            padding: { x: 8, y: 4 }
+          }
+        );
+        this.carPrompt.setOrigin(0.5);
+        this.carPrompt.setDepth(1000);
+      } else {
+        this.carPrompt.setText('Press E to exit car');
+        this.carPrompt.setPosition(this.car.x, promptY);
+      }
+
+      if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
+        this.exitCar();
+      }
+
+      return;
+    }
+
+    // Not in car – check if player is close enough to enter
+    if (!this.player) return;
+
+    const distance = Phaser.Math.Distance.Between(
+      this.player.x,
+      this.player.y,
+      this.car.x,
+      this.car.y
+    );
+
+    const interactionDistance = 100;
+
+    if (distance < interactionDistance) {
+      const promptY = this.car.y - this.car.displayHeight - 10;
+
+      // If player doesn't have keys yet, show requirement message instead
+      const text = this.hasCarKeys ? 'Press E to get in car' : 'You need keys to drive this car';
+
+      if (!this.carPrompt) {
+        this.carPrompt = this.add.text(
+          this.car.x,
+          promptY,
+          text,
+          {
+            fontSize: '14px',
+            fill: '#ffffff',
+            backgroundColor: '#000000',
+            padding: { x: 8, y: 4 }
+          }
+        );
+        this.carPrompt.setOrigin(0.5);
+        this.carPrompt.setDepth(1000);
+      } else {
+        this.carPrompt.setText(text);
+        this.carPrompt.setPosition(this.car.x, promptY);
+      }
+
+      if (this.hasCarKeys && Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
+        this.enterCar();
+      }
+    } else {
+      if (this.carPrompt) {
+        this.carPrompt.destroy();
+        this.carPrompt = null;
+      }
+    }
+  }
+
+  /**
+   * Move the car when the player is inside
+   */
+  updateCarMovement() {
+    if (!this.car || !this.player || !this.player.cursors) return;
+
+    const cursors = this.player.cursors;
+    const speed = 250;
+
+    if (cursors.left.isDown) {
+      this.car.setVelocityX(-speed);
+    } else if (cursors.right.isDown) {
+      this.car.setVelocityX(speed);
+    } else {
+      this.car.setVelocityX(0);
+    }
+  }
+
+  /**
+   * Enter the car: hide player and switch control to the car
+   */
+  enterCar() {
+    if (!this.car || !this.player || this.isInCar) return;
+
+    this.isInCar = true;
+
+    // Snap car to player's horizontal position so "getting in" feels natural
+    this.car.x = this.player.x;
+
+    // Hide and disable player physics while inside car
+    this.player.setVisible(false);
+    if (this.player.body) {
+      this.player.body.enable = false;
+      this.player.setVelocity(0, 0);
+    }
+
+    // Switch camera to follow the car
+    this.cameras.main.startFollow(this.car, true, 0.1, 0.1);
+  }
+
+  /**
+   * Exit the car: show player again and restore control
+   */
+  exitCar() {
+    if (!this.car || !this.player || !this.isInCar) return;
+
+    this.isInCar = false;
+
+    // Place player next to the car
+    const exitOffsetX = -40;
+    const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
+    const exitY = groundY - 60; // Drop player in a bit above the ground so they don't get stuck
+
+    this.player.setPosition(this.car.x + exitOffsetX, exitY);
+    this.player.setVisible(true);
+    if (this.player.body) {
+      this.player.body.enable = true;
+      this.player.setVelocity(0, 0);
+    }
+
+    // Stop the car when exiting
+    this.car.setVelocity(0, 0);
+
+    // Remove prompt (it will be recreated as needed)
+    if (this.carPrompt) {
+      this.carPrompt.destroy();
+      this.carPrompt = null;
+    }
+
+    // Switch camera back to follow the player
+    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
   }
 
   /**

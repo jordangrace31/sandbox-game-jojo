@@ -1,0 +1,14 @@
+{
+    "frames": {
+      "car": { "frame": { "x": 240, "y": 300, "w": 240, "h": 128 } }
+    },
+    "meta": {
+      "app": "Phaser",
+      "version": "3.x",
+      "image": "vehicles-bgr.png",
+      "format": "RGBA8888",
+      "size": { "w": 740, "h": 415 },
+      "scale": "1"
+    }
+  }
+  

@@ -21,7 +21,7 @@ export const PLAYER_CONFIG = {
   climbSpeed: 200,
   jumpPower: -500,
   bounce: 0.1,
-  startX: 100,
+  startX: 10000,
   startY: 450,
   depth: 1000
 };
