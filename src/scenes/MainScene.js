@@ -40,6 +40,8 @@ export default class MainScene extends Phaser.Scene {
     this.campQuestCompleted = false;
     this.lockStockQuestTriggered = false;
     this.lockStockQuestCompleted = false;
+    this.inhanceQuestTriggered = false;
+    this.inhanceQuestCompleted = false;
 
     // Car / keys state
     this.isInCar = false;
@@ -57,6 +59,7 @@ export default class MainScene extends Phaser.Scene {
     this.piepsieX = 6000;
     this.campX = 9900;
     this.lockStockX = 7000;
+    this.inhanceX = 14000;
     
     // Player stats - store in registry to share across scenes
     if (!this.registry.has('playerStats')) {
@@ -206,6 +209,9 @@ export default class MainScene extends Phaser.Scene {
       
       // Check for Lock Stock scene trigger
       this.checkLockStockTrigger();
+      
+      // Check for Inhance scene trigger
+      this.checkInhanceTrigger();
     }
   }
 
@@ -707,6 +713,23 @@ export default class MainScene extends Phaser.Scene {
   }
 
   /**
+   * Check if player has reached the Inhance scene trigger zone
+   */
+  checkInhanceTrigger() {
+    if (!this.player || this.inhanceQuestCompleted || this.inhanceQuestTriggered) return;
+    
+    const triggerX = this.inhanceX;
+    const triggerRange = 50;
+    const distance = Math.abs(this.player.x - triggerX);
+    
+    // Show prompt when in range
+    if (distance < triggerRange) {
+      this.inhanceQuestTriggered = true;
+      this.startInhanceScene();
+    }
+  }
+
+  /**
    * Start the Lock Stock scene by switching to LockStockScene
    */
   startLockStockScene() {
@@ -723,6 +746,29 @@ export default class MainScene extends Phaser.Scene {
       
       // Start Lock Stock scene
       this.scene.launch('LockStockScene');
+      
+      // Reset the camera fade for when we return
+      this.cameras.main.resetFX();
+    });
+  }
+
+  /**
+   * Start the Inhance scene by switching to InhanceScene
+   */
+  startInhanceScene() {
+    // Fade out main scene music
+    this.musicManager.stop(1000);
+    
+    // Fade out main scene
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    
+    // Wait for fade out to complete before switching scenes
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // Pause main scene
+      this.scene.pause('MainScene');
+      
+      // Start Inhance scene
+      this.scene.launch('InhanceScene');
       
       // Reset the camera fade for when we return
       this.cameras.main.resetFX();
@@ -1611,11 +1657,17 @@ export default class MainScene extends Phaser.Scene {
     
     this.campTriggerMarker = this.createPost(campTriggerX, campTriggerY, 1.5);
 
-    // Lock Stock Scene trigger marker at x=4000
+    // Lock Stock Scene trigger marker at x=7000
     const lockStockTriggerX = this.lockStockX;
     const lockStockTriggerY = groundY;
     
     this.lockStockTriggerMarker = this.createPost(lockStockTriggerX, lockStockTriggerY, 1.5);
+
+    // Inhance Scene trigger marker at x=14000
+    const inhanceTriggerX = this.inhanceX;
+    const inhanceTriggerY = groundY;
+    
+    this.inhanceTriggerMarker = this.createPost(inhanceTriggerX, inhanceTriggerY, 1.5);
 
 
     // these are the obstacles that are created after the player has completed the lock stock quest

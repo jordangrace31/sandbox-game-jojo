@@ -11,6 +11,7 @@ import MainScene from './scenes/MainScene.js';
 import CampScene from './scenes/CampScene.js';
 import LockStockScene from './scenes/LockStockScene.js';
 import ClubScene from './scenes/ClubScene.js';
+import InhanceScene from './scenes/InhanceScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -24,7 +25,8 @@ const config = {
     MainScene,
     CampScene,
     LockStockScene,
-    ClubScene
+    ClubScene,
+    InhanceScene
   ]
 };
 
