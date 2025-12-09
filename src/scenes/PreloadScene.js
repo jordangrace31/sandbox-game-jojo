@@ -191,6 +191,18 @@ export default class PreloadScene extends Phaser.Scene {
     );
 
     this.load.atlas(
+      'ly_idle',
+      'assets/images/ly_idle.png',
+      'assets/atlases/ly_idle.json'
+    );
+
+    this.load.atlas(
+      'tom_idle',
+      'assets/images/tom_idle.png',
+      'assets/atlases/tom_idle.json'
+    );
+
+    this.load.atlas(
       'cars',
       'assets/images/vehicles-bgr.png',
       'assets/atlases/cars_atlas.json'

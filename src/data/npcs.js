@@ -48,44 +48,6 @@ export const NPC_DATA = {
     ],
     depth: 998
   },
-  
-  blacksmith: {
-    name: "Marcus",
-    dialogues: [
-      "Need something forged?",
-      "I've been a blacksmith for 20 years!",
-      "Bring me materials and I'll craft you something special."
-    ],
-    quests: [
-      {
-        id: "find_iron",
-        title: "Find Iron Ore",
-        description: "I need 3 iron ore to craft a new sword. Check the mines to the north.",
-        objectives: {
-          iron_collected: 0,
-          iron_needed: 3
-        },
-        rewards: {
-          gold: 0,
-          experience: 200,
-          items: ["iron_sword"]
-        },
-        completed: false
-      }
-    ],
-    depth: 997
-  },
-  
-  mysteriousStranger: {
-    name: "???",
-    dialogues: [
-      "The shadows whisper secrets...",
-      "Are you brave enough to face what lies ahead?",
-      "Some mysteries are better left unsolved..."
-    ],
-    quests: [],
-    depth: 996
-  },
 
   sirAllister: {
     name: "Sir Allister",
@@ -113,6 +75,43 @@ export const NPC_DATA = {
       }
     ],
     depth: 995
+  },
+
+  lynne: {
+    name: "Lynne",
+    dialogues: [
+      "Cools!"
+    ],
+    quests: [],
+    depth: 998
+  },
+
+  tom: {
+    name: "Tom",
+    dialogues: [
+      "Hey man, whats up?",
+      "I'm currently debugging some LP code. The usual Monday stuff.",
+      "I can't seem to get this div to center properly.",
+      "Would you mind helping me out?",
+      "Find your desk and check our teams chat."
+    ],
+    quests: [
+      {
+        id: "center_div",
+        title: "Center the Div",
+        description: "Help Tom by centering a div component using CSS. Use your computer at your desk to complete the coding challenge.",
+        objectives: {
+          div_centered: false
+        },
+        rewards: {
+          gold: 50,
+          experience: 200,
+          items: []
+        },
+        completed: false
+      }
+    ],
+    depth: 999
   }
 };
 
