@@ -1,6 +1,5 @@
 /**
  * NPC Data
- * Define all NPCs, their dialogues, and associated quests
  */
 
 export const NPC_DATA = {
@@ -99,9 +98,6 @@ export const NPC_DATA = {
   }
 };
 
-/**
- * Get NPC data by ID
- */
 export function getNPCData(npcId) {
   return NPC_DATA[npcId] || null;
 }
