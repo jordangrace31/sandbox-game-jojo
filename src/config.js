@@ -14,7 +14,7 @@ export const GAME_CONFIG = {
 
 export const PLAYER_CONFIG = {
   speed: 150,
-  climbSpeed: 200,
+  climbSpeed: 100,
   jumpPower: -500,
   bounce: 0.1,
   startX: 100,
@@ -29,7 +29,7 @@ export const ANIMATION_CONFIG = {
 };
 
 export const WORLD_CONFIG = {
-  width: 15000,       
+  width: 15500,       
   height: 700,
   groundHeight: 80,   // Height of the ground/grass area
   skyColors: {
