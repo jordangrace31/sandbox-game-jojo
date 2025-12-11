@@ -1896,6 +1896,9 @@ export default class InhanceScene extends Phaser.Scene {
     this.time.delayedCall(3000, () => {
       this.closeComputerView();
       
+      // Reset Luna's position and visibility after quest completion
+      this.resetLunaAfterQuest();
+      
       // Show Tom's reaction
       this.time.delayedCall(500, () => {
         this.tomPostQuestDialogueActive = true;
@@ -1935,11 +1938,49 @@ export default class InhanceScene extends Phaser.Scene {
   }
 
   /**
+   * Reset Luna's position and visibility after quest completion
+   */
+  resetLunaAfterQuest() {
+    if (!this.lunaGirl || !this.player) return;
+    
+    // Ensure Luna is visible
+    this.lunaGirl.setVisible(true);
+    this.lunaGirl.setAlpha(1);
+    
+    // Position Luna near the player (slightly behind/to the side)
+    const groundY = GAME_CONFIG.height - 100;
+    const playerX = this.player.x;
+    const playerY = this.player.y;
+    
+    // Position Luna slightly to the left of the player, at ground level
+    const lunaX = Math.max(50, playerX - 100); // Ensure she's not off-screen
+    const lunaY = groundY - 20;
+    
+    this.lunaGirl.setPosition(lunaX, lunaY);
+    this.lunaGirl.setVelocity(0, 0);
+    
+    // Reset animation to idle
+    const direction = playerX > lunaX ? 'right' : 'left';
+    this.lunaGirl.play(`girl_idle_${direction}`);
+    
+    // Ensure follow behavior is enabled
+    this.lunaFollowEnabled = true;
+  }
+
+  /**
    * Close the computer view
    */
   closeComputerView() {
     this.computerViewActive = false;
     this.gitCommitActive = false;
+    
+    // Ensure Luna is visible and reset when computer view closes
+    if (this.lunaGirl && this.player) {
+      this.lunaGirl.setVisible(true);
+      this.lunaGirl.setAlpha(1);
+      // Re-enable follow behavior
+      this.lunaFollowEnabled = true;
+    }
     
     // Clean up git terminal
     if (this.gitTerminalElements) {
