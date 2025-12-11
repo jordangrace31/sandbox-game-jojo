@@ -697,7 +697,7 @@ export default class MainScene extends Phaser.Scene {
   checkEndingSequenceTrigger() {
     if (!this.player || this.endingSequenceTriggered || !this.inhanceQuestCompleted) return;
     
-    const triggerX = 14300;
+    const triggerX = 14900;
     const triggerRange = 50;
     
     const checkX = this.isInCar && this.car ? this.car.x : this.player.x;
@@ -1333,9 +1333,8 @@ export default class MainScene extends Phaser.Scene {
     this.hamiltonQuestCompleted = true;
     
     this.dialogueManager.startDialogue("Hamilton", [
-      "Ag, you found my dop! Dankie dankie!",
-      "You're a real boet. Here, take this as a reward!"
-    ]);
+      "Ag, you found my dop! Dankie bra!"
+        ]);
     
     if (this.questManager) {
       this.questManager.completeQuest('fetch_dop');
