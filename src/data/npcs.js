@@ -91,26 +91,11 @@ export const NPC_DATA = {
     dialogues: [
       "Hey man, whats up?",
       "I'm currently debugging some LP code. The usual Monday stuff.",
-      "I can't seem to get this div to center properly.",
-      "Would you mind helping me out?",
-      "Find your desk and check our teams chat."
+      "I can't seem to get this div to center properly...",
+      "Could you check your computer? I sent the code there.",
+      "Maybe you can figure out the right CSS properties to use!"
     ],
-    quests: [
-      {
-        id: "center_div",
-        title: "Center the Div",
-        description: "Help Tom by centering a div component using CSS. Use your computer at your desk to complete the coding challenge.",
-        objectives: {
-          div_centered: false
-        },
-        rewards: {
-          gold: 50,
-          experience: 200,
-          items: []
-        },
-        completed: false
-      }
-    ],
+    quests: [],
     depth: 999
   }
 };

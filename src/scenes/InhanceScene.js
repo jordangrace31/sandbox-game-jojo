@@ -62,23 +62,28 @@ export default class InhanceScene extends Phaser.Scene {
     // Set up interaction key for exit
     this.interactionKey = this.input.keyboard.addKey('E');
     
-    // Quest tracking
-    this.hasSpokenToTom = false;
-    this.codingQuestActive = false;
-    this.codingQuestCompleted = false;
-    this.computerOpen = false;
-    
-    // Store first desk position (player's desk)
-    this.playerDesk = { x: 250, y: GAME_CONFIG.height - 140 };
-    
     // Create exit door
     this.createExitDoor();
+    
+    // Quest tracking
+    this.hasSpokenToTom = false;
+    this.codingQuestCompleted = false;
+    this.computerViewActive = false;
+    
+    // Store first desk position for computer interaction
+    this.playerDeskPosition = { x: 250, y: GAME_CONFIG.height - 140 };
     
     // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
   }
 
   update() {
+    // Handle dev tools input if computer view is active
+    if (this.computerViewActive) {
+      this.updateDevTools();
+      return;
+    }
+    
     // Update player
     this.player.update();
     
@@ -100,10 +105,8 @@ export default class InhanceScene extends Phaser.Scene {
     // Check for NPC interactions
     this.checkNPCInteractions();
     
-    // Check for computer interaction (player's desk)
-    if (!this.computerOpen) {
-      this.checkComputerInteraction();
-    }
+    // Check for computer interaction (only after talking to Tom)
+    this.checkComputerInteraction();
     
     // Check for exit door interaction
     this.checkExitDoorInteraction();
@@ -572,10 +575,9 @@ export default class InhanceScene extends Phaser.Scene {
   interactWithNPC(npc) {
     if (!npc.dialogues || npc.dialogues.length === 0) return;
     
-    // Check if this is Tom and activate quest
+    // Track if player has spoken to Tom
     if (npc === this.tom && !this.hasSpokenToTom) {
       this.hasSpokenToTom = true;
-      this.codingQuestActive = true;
     }
     
     this.dialogueManager.startDialogue(npc.name, npc.dialogues);
@@ -590,8 +592,8 @@ export default class InhanceScene extends Phaser.Scene {
     const distance = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
-      this.playerDesk.x,
-      this.playerDesk.y
+      this.playerDeskPosition.x,
+      this.playerDeskPosition.y
     );
     
     const interactionDistance = 80;
@@ -600,14 +602,14 @@ export default class InhanceScene extends Phaser.Scene {
       // Show computer prompt
       if (!this.computerPrompt) {
         this.computerPrompt = this.add.text(
-          this.playerDesk.x,
-          this.playerDesk.y - 80,
+          this.playerDeskPosition.x,
+          this.playerDeskPosition.y - 60,
           'Press E to check your computer',
           {
-            fontSize: '14px',
-            fill: '#00ff00',
+            fontSize: '12px',
+            fill: '#00ffff',
             backgroundColor: '#000000',
-            padding: { x: 8, y: 4 }
+            padding: { x: 6, y: 3 }
           }
         );
         this.computerPrompt.setOrigin(0.5);
@@ -616,7 +618,7 @@ export default class InhanceScene extends Phaser.Scene {
       
       // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
-        this.openComputer();
+        this.openComputerView();
       }
     } else {
       // Hide prompt if player walks away
@@ -628,278 +630,627 @@ export default class InhanceScene extends Phaser.Scene {
   }
 
   /**
-   * Open computer screen with coding challenge
+   * Open the computer view with dev tools simulation
    */
-  openComputer() {
-    this.computerOpen = true;
+  openComputerView() {
+    this.computerViewActive = true;
     
-    // Disable player movement
-    this.player.setVelocity(0, 0);
-    this.player.body.setAllowGravity(false);
-    
-    // Hide computer prompt
+    // Hide the computer prompt
     if (this.computerPrompt) {
       this.computerPrompt.destroy();
       this.computerPrompt = null;
     }
     
-    // Create computer UI overlay
-    this.createComputerUI();
-  }
-
-  /**
-   * Create computer UI with coding challenge
-   */
-  createComputerUI() {
-    // Dark overlay background
+    // Initialize margin values (button starts off-center)
+    this.marginValues = {
+      top: 20,
+      right: 20,
+      bottom: 20,
+      left: 20
+    };
+    this.selectedProperty = 'left'; // Currently selected margin property
+    this.devElements = []; // Store all dev tools elements for cleanup
+    
+    // Create dark overlay
     this.computerOverlay = this.add.rectangle(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
       GAME_CONFIG.width,
       GAME_CONFIG.height,
       0x000000,
-      0.95
+      0.9
     );
     this.computerOverlay.setScrollFactor(0);
-    this.computerOverlay.setDepth(3000);
+    this.computerOverlay.setDepth(2000);
     
-    // Computer screen frame
-    const screenWidth = 800;
-    const screenHeight = 500;
+    // Screen dimensions
+    const screenWidth = 900;
+    const screenHeight = 550;
     const screenX = GAME_CONFIG.width / 2;
     const screenY = GAME_CONFIG.height / 2;
     
-    this.computerScreen = this.add.rectangle(
-      screenX,
-      screenY,
-      screenWidth,
-      screenHeight,
-      0x1a1a1a
-    );
-    this.computerScreen.setStrokeStyle(4, 0x4a90e2);
-    this.computerScreen.setScrollFactor(0);
-    this.computerScreen.setDepth(3001);
+    // Browser chrome (top bar)
+    this.browserChrome = this.add.rectangle(screenX, screenY - screenHeight / 2 + 20, screenWidth, 40, 0x3c3c3c);
+    this.browserChrome.setScrollFactor(0);
+    this.browserChrome.setDepth(2001);
+    this.devElements.push(this.browserChrome);
     
-    // Title bar
-    const titleBar = this.add.rectangle(
-      screenX,
-      screenY - screenHeight / 2 + 20,
-      screenWidth,
-      40,
-      0x2d2d2d
-    );
-    titleBar.setScrollFactor(0);
-    titleBar.setDepth(3002);
+    // Browser tabs
+    const tabBg = this.add.rectangle(screenX - 350, screenY - screenHeight / 2 + 20, 150, 30, 0x1e1e1e);
+    tabBg.setScrollFactor(0);
+    tabBg.setDepth(2002);
+    this.devElements.push(tabBg);
     
-    const titleText = this.add.text(
-      screenX - screenWidth / 2 + 20,
-      screenY - screenHeight / 2 + 20,
-      'VS Code - style.css',
-      {
-        fontSize: '16px',
-        fill: '#ffffff',
-        fontFamily: 'monospace'
+    const tabText = this.add.text(screenX - 350, screenY - screenHeight / 2 + 20, 'localhost:3000', {
+      fontSize: '12px',
+      fill: '#ffffff',
+      fontFamily: 'Arial'
+    });
+    tabText.setOrigin(0.5);
+    tabText.setScrollFactor(0);
+    tabText.setDepth(2003);
+    this.devElements.push(tabText);
+    
+    // URL bar
+    const urlBar = this.add.rectangle(screenX, screenY - screenHeight / 2 + 20, 400, 24, 0x252526);
+    urlBar.setScrollFactor(0);
+    urlBar.setDepth(2002);
+    this.devElements.push(urlBar);
+    
+    const urlText = this.add.text(screenX, screenY - screenHeight / 2 + 20, '🔒 localhost:3000/yard', {
+      fontSize: '12px',
+      fill: '#aaaaaa',
+      fontFamily: 'Arial'
+    });
+    urlText.setOrigin(0.5);
+    urlText.setScrollFactor(0);
+    urlText.setDepth(2003);
+    this.devElements.push(urlText);
+    
+    // Split screen: Left = Dev Tools, Right = Web Page Preview
+    const devToolsWidth = 320;
+    const previewWidth = screenWidth - devToolsWidth;
+    const contentY = screenY + 20;
+    const contentHeight = screenHeight - 80;
+    
+    // === DEV TOOLS PANEL (Left) ===
+    const devToolsX = screenX - screenWidth / 2 + devToolsWidth / 2;
+    
+    // Dev tools background
+    const devToolsBg = this.add.rectangle(devToolsX, contentY, devToolsWidth, contentHeight, 0x1e1e1e);
+    devToolsBg.setScrollFactor(0);
+    devToolsBg.setDepth(2001);
+    this.devElements.push(devToolsBg);
+    
+    // Dev tools header
+    const devHeader = this.add.rectangle(devToolsX, contentY - contentHeight / 2 + 15, devToolsWidth, 30, 0x252526);
+    devHeader.setScrollFactor(0);
+    devHeader.setDepth(2002);
+    this.devElements.push(devHeader);
+    
+    // Dev tools tabs
+    const tabNames = ['Elements', 'Styles', 'Console'];
+    tabNames.forEach((name, i) => {
+      const tabX = devToolsX - 100 + i * 80;
+      const isActive = name === 'Styles';
+      const tab = this.add.text(tabX, contentY - contentHeight / 2 + 15, name, {
+        fontSize: '12px',
+        fill: isActive ? '#ffffff' : '#888888',
+        fontFamily: 'Arial'
+      });
+      tab.setOrigin(0.5);
+      tab.setScrollFactor(0);
+      tab.setDepth(2003);
+      this.devElements.push(tab);
+      
+      if (isActive) {
+        const underline = this.add.rectangle(tabX, contentY - contentHeight / 2 + 28, 50, 2, 0x007acc);
+        underline.setScrollFactor(0);
+        underline.setDepth(2003);
+        this.devElements.push(underline);
       }
-    );
-    titleText.setOrigin(0, 0.5);
-    titleText.setScrollFactor(0);
-    titleText.setDepth(3003);
+    });
     
-    // Close button
-    const closeButton = this.add.text(
-      screenX + screenWidth / 2 - 30,
-      screenY - screenHeight / 2 + 20,
-      'X',
-      {
-        fontSize: '20px',
-        fill: '#ff0000',
-        fontStyle: 'bold'
-      }
-    );
-    closeButton.setOrigin(0.5);
-    closeButton.setScrollFactor(0);
-    closeButton.setDepth(3003);
-    closeButton.setInteractive({ useHandCursor: true });
-    closeButton.on('pointerdown', () => this.closeComputer());
+    // Styles panel content
+    this.createStylesPanel(devToolsX, contentY - 60);
     
-    // Code editor content
-    const codeText = `/* Parent Container */\n.container {\n  display: flex;\n  \n  \n  height: 100vh;\n}\n\n/* Child Div */\n.centered-div {\n  width: 200px;\n  height: 100px;\n}`;
+    // === WEB PAGE PREVIEW (Right) ===
+    const previewX = screenX + devToolsWidth / 2;
     
-    this.codeDisplay = this.add.text(
-      screenX - screenWidth / 2 + 40,
-      screenY - screenHeight / 2 + 80,
-      codeText,
-      {
-        fontSize: '14px',
-        fill: '#d4d4d4',
-        fontFamily: 'monospace',
-        lineSpacing: 8
-      }
-    );
-    this.codeDisplay.setOrigin(0, 0);
-    this.codeDisplay.setScrollFactor(0);
-    this.codeDisplay.setDepth(3002);
+    // Web page background (white)
+    const pageBg = this.add.rectangle(previewX, contentY, previewWidth, contentHeight, 0xffffff);
+    pageBg.setScrollFactor(0);
+    pageBg.setDepth(2001);
+    this.devElements.push(pageBg);
+    
+    // Web page header bar
+    const headerBar = this.add.rectangle(previewX, contentY - contentHeight / 2 + 30, previewWidth, 60, 0x2c3e50);
+    headerBar.setScrollFactor(0);
+    headerBar.setDepth(2002);
+    this.devElements.push(headerBar);
+    
+    // Logo text
+    const logoText = this.add.text(previewX - 200, contentY - contentHeight / 2 + 30, 'Yard', {
+      fontSize: '20px',
+      fill: '#ffffff',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    });
+    logoText.setOrigin(0, 0.5);
+    logoText.setScrollFactor(0);
+    logoText.setDepth(2003);
+    this.devElements.push(logoText);
+    
+    // Nav links
+    const navLinks = ['Console', 'Workflows', 'Visits'];
+    navLinks.forEach((link, i) => {
+      const navText = this.add.text(previewX + 80 + i * 70, contentY - contentHeight / 2 + 30, link, {
+        fontSize: '12px',
+        fill: '#ecf0f1',
+        fontFamily: 'Arial'
+      });
+      navText.setOrigin(0.5);
+      navText.setScrollFactor(0);
+      navText.setDepth(2003);
+      this.devElements.push(navText);
+    });
+    
+    // Page content area
+    const pageContentY = contentY + 20;
+    
+    // Headline
+    const headline = this.add.text(previewX, pageContentY - 80, 'Yard Platform', {
+      fontSize: '24px',
+      fill: '#2c3e50',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    });
+    headline.setOrigin(0.5);
+    headline.setScrollFactor(0);
+    headline.setDepth(2003);
+    this.devElements.push(headline);
+    
+    // Subtext
+    const subtext = this.add.text(previewX, pageContentY - 45, 'The best solution for your yard', {
+      fontSize: '14px',
+      fill: '#7f8c8d',
+      fontFamily: 'Arial'
+    });
+    subtext.setOrigin(0.5);
+    subtext.setScrollFactor(0);
+    subtext.setDepth(2003);
+    this.devElements.push(subtext);
+    
+    // Container box (visual guide)
+    this.containerBox = this.add.rectangle(previewX, pageContentY + 60, 400, 150, 0xecf0f1);
+    this.containerBox.setStrokeStyle(2, 0xbdc3c7, 1);
+    this.containerBox.setScrollFactor(0);
+    this.containerBox.setDepth(2002);
+    this.devElements.push(this.containerBox);
+    
+    // Container label
+    const containerLabel = this.add.text(previewX, pageContentY - 10, '.button-container', {
+      fontSize: '10px',
+      fill: '#95a5a6',
+      fontFamily: 'Courier New'
+    });
+    containerLabel.setOrigin(0.5);
+    containerLabel.setScrollFactor(0);
+    containerLabel.setDepth(2003);
+    this.devElements.push(containerLabel);
+    
+    // THE BUTTON (this is what we're centering!)
+    this.targetButton = this.add.rectangle(0, 0, 120, 40, 0x3498db);
+    this.targetButton.setScrollFactor(0);
+    this.targetButton.setDepth(2004);
+    this.devElements.push(this.targetButton);
+    
+    this.buttonText = this.add.text(0, 0, 'Poo', {
+      fontSize: '14px',
+      fill: '#ffffff',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    });
+    this.buttonText.setOrigin(0.5);
+    this.buttonText.setScrollFactor(0);
+    this.buttonText.setDepth(2005);
+    this.devElements.push(this.buttonText);
+    
+    // Store container bounds for button positioning
+    this.containerBounds = {
+      x: previewX - 200,
+      y: pageContentY - 15,
+      width: 400,
+      height: 150
+    };
+    
+    // Update button position based on margins
+    this.updateButtonPosition();
     
     // Instructions
-    const instructions = this.add.text(
+    this.instructionText = this.add.text(
       screenX,
-      screenY + screenHeight / 2 + 40,
-      'Add CSS properties to center the div!\nPress 1: justify-content: center;  |  Press 2: align-items: center;  |  Press ESC to close',
+      screenY + screenHeight / 2 - 25,
+      'Use number keys [1-9] to adjust margin-left. Center the Poo button! | Press [TAB] to change property | [ESC] to close',
       {
-        fontSize: '14px',
-        fill: '#ffff00',
+        fontSize: '15px',
+        fill: '#00ff00',
         backgroundColor: '#000000',
-        padding: { x: 15, y: 8 },
-        align: 'center'
+        padding: { x: 10, y: 5 },
+        fontFamily: 'Courier New'
       }
     );
-    instructions.setOrigin(0.5);
-    instructions.setScrollFactor(0);
-    instructions.setDepth(3003);
+    this.instructionText.setOrigin(0.5);
+    this.instructionText.setScrollFactor(0);
+    this.instructionText.setDepth(2010);
+    this.devElements.push(this.instructionText);
     
-    // Track which properties have been added
-    this.cssProperties = {
-      justifyContent: false,
-      alignItems: false
-    };
-    
-    // Set up keyboard input for adding CSS properties
-    this.key1 = this.input.keyboard.addKey('ONE');
-    this.key2 = this.input.keyboard.addKey('TWO');
-    this.escKey = this.input.keyboard.addKey('ESC');
-    
-    // Store UI elements for cleanup
-    this.computerUIElements = [
-      this.computerOverlay,
-      this.computerScreen,
-      titleBar,
-      titleText,
-      closeButton,
-      this.codeDisplay,
-      instructions
-    ];
-    
-    // Update loop for keyboard input
-    this.computerInputHandler = () => {
-      if (Phaser.Input.Keyboard.JustDown(this.key1) && !this.cssProperties.justifyContent) {
-        this.addCSSProperty('justifyContent');
-      }
-      if (Phaser.Input.Keyboard.JustDown(this.key2) && !this.cssProperties.alignItems) {
-        this.addCSSProperty('alignItems');
-      }
-      if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
-        this.closeComputer();
-      }
-    };
-    
-    this.events.on('update', this.computerInputHandler);
+    // Set up number key listeners
+    this.setupDevToolsControls();
   }
 
   /**
-   * Add CSS property to the code
+   * Create the Styles panel in dev tools
    */
-  addCSSProperty(property) {
-    this.cssProperties[property] = true;
+  createStylesPanel(x, y) {
+    const startY = y;
+    const lineHeight = 18;
     
-    // Update code display
-    let codeText = `/* Parent Container */\n.container {\n  display: flex;\n  `;
+    // Element selector
+    const selectorBg = this.add.rectangle(x, startY - 50, 300, 25, 0x264f78);
+    selectorBg.setScrollFactor(0);
+    selectorBg.setDepth(2003);
+    this.devElements.push(selectorBg);
     
-    if (this.cssProperties.justifyContent) {
-      codeText += `justify-content: center; /* Centers horizontally */\n  `;
-    }
+    const selectorText = this.add.text(x, startY - 50, 'button.cta-button', {
+      fontSize: '12px',
+      fill: '#9cdcfe',
+      fontFamily: 'Courier New'
+    });
+    selectorText.setOrigin(0.5);
+    selectorText.setScrollFactor(0);
+    selectorText.setDepth(2004);
+    this.devElements.push(selectorText);
     
-    if (this.cssProperties.alignItems) {
-      codeText += `align-items: center;     /* Centers vertically */\n  `;
-    }
+    // Styles header
+    const stylesHeader = this.add.text(x - 130, startY - 25, 'element.style {', {
+      fontSize: '12px',
+      fill: '#d4d4d4',
+      fontFamily: 'Courier New'
+    });
+    stylesHeader.setScrollFactor(0);
+    stylesHeader.setDepth(2004);
+    this.devElements.push(stylesHeader);
     
-    codeText += `height: 100vh;\n}\n\n/* Child Div */\n.centered-div {\n  width: 200px;\n  height: 100px;\n}`;
+    // Margin properties
+    const properties = ['margin-top', 'margin-right', 'margin-bottom', 'margin-left'];
+    const propKeys = ['top', 'right', 'bottom', 'left'];
     
-    this.codeDisplay.setText(codeText);
+    this.marginTexts = {};
+    this.marginValueTexts = {};
+    this.marginHighlights = {};
     
-    // Check if quest is complete
-    if (this.cssProperties.justifyContent && this.cssProperties.alignItems) {
-      this.time.delayedCall(1000, () => {
-        this.completeCodingQuest();
+    properties.forEach((prop, i) => {
+      const propY = startY + i * lineHeight;
+      const key = propKeys[i];
+      
+      // Highlight background (for selected property)
+      const highlight = this.add.rectangle(x, propY + 5, 290, lineHeight, 0x264f78, 0);
+      highlight.setScrollFactor(0);
+      highlight.setDepth(2003);
+      this.marginHighlights[key] = highlight;
+      this.devElements.push(highlight);
+      
+      // Property name
+      const propText = this.add.text(x - 120, propY, `  ${prop}:`, {
+        fontSize: '12px',
+        fill: '#9cdcfe',
+        fontFamily: 'Courier New'
       });
+      propText.setScrollFactor(0);
+      propText.setDepth(2004);
+      this.marginTexts[key] = propText;
+      this.devElements.push(propText);
+      
+      // Property value (editable)
+      const valueText = this.add.text(x + 20, propY, `${this.marginValues[key]}px;`, {
+        fontSize: '12px',
+        fill: '#ce9178',
+        fontFamily: 'Courier New'
+      });
+      valueText.setScrollFactor(0);
+      valueText.setDepth(2004);
+      this.marginValueTexts[key] = valueText;
+      this.devElements.push(valueText);
+    });
+    
+    // Closing brace
+    const closeBrace = this.add.text(x - 130, startY + 4 * lineHeight + 5, '}', {
+      fontSize: '12px',
+      fill: '#d4d4d4',
+      fontFamily: 'Courier New'
+    });
+    closeBrace.setScrollFactor(0);
+    closeBrace.setDepth(2004);
+    this.devElements.push(closeBrace);
+    
+    // Other CSS properties (static display)
+    const otherProps = [
+      { prop: 'background-color', value: '#3498db' },
+      { prop: 'color', value: '#ffffff' },
+      { prop: 'padding', value: '10px 20px' },
+      { prop: 'border-radius', value: '5px' },
+      { prop: 'cursor', value: 'pointer' }
+    ];
+    
+    const otherY = startY + 5 * lineHeight + 20;
+    
+    const otherHeader = this.add.text(x - 130, otherY, '.cta-button {', {
+      fontSize: '12px',
+      fill: '#d4d4d4',
+      fontFamily: 'Courier New'
+    });
+    otherHeader.setScrollFactor(0);
+    otherHeader.setDepth(2004);
+    this.devElements.push(otherHeader);
+    
+    otherProps.forEach((item, i) => {
+      const propY = otherY + 15 + i * 15;
+      const text = this.add.text(x - 120, propY, `  ${item.prop}: ${item.value};`, {
+        fontSize: '10px',
+        fill: '#6a9955',
+        fontFamily: 'Courier New'
+      });
+      text.setScrollFactor(0);
+      text.setDepth(2004);
+      this.devElements.push(text);
+    });
+    
+    const otherClose = this.add.text(x - 130, otherY + 15 + otherProps.length * 15, '}', {
+      fontSize: '12px',
+      fill: '#d4d4d4',
+      fontFamily: 'Courier New'
+    });
+    otherClose.setScrollFactor(0);
+    otherClose.setDepth(2004);
+    this.devElements.push(otherClose);
+    
+    // Update highlight for selected property
+    this.updatePropertyHighlight();
+  }
+
+  /**
+   * Set up keyboard controls for dev tools
+   */
+  setupDevToolsControls() {
+    // Number keys 1-9
+    this.numberKeys = [];
+    for (let i = 1; i <= 9; i++) {
+      const key = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes[`${i === 0 ? 'ZERO' : i.toString().toUpperCase()}`] || (48 + i));
+      this.numberKeys.push({ key, value: i * 10 }); // 10, 20, 30... 90
+    }
+    
+    // Also add 0 for 0px
+    const zeroKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ZERO);
+    this.numberKeys.push({ key: zeroKey, value: 0 });
+    
+    // Tab to switch properties
+    this.tabKey = this.input.keyboard.addKey('TAB');
+    
+    // ESC to close
+    this.escKey = this.input.keyboard.addKey('ESC');
+    
+    // Arrow keys for fine control
+    this.upKey = this.input.keyboard.addKey('UP');
+    this.downKey = this.input.keyboard.addKey('DOWN');
+    
+    // Store property order for cycling
+    this.propertyOrder = ['top', 'right', 'bottom', 'left'];
+    this.propertyIndex = 3; // Start with margin-left selected
+  }
+
+  /**
+   * Update method for dev tools (called when computer view is active)
+   */
+  updateDevTools() {
+    if (!this.computerViewActive) return;
+    
+    // Check number keys
+    this.numberKeys.forEach(({ key, value }) => {
+      if (Phaser.Input.Keyboard.JustDown(key)) {
+        this.marginValues[this.selectedProperty] = value;
+        this.updateMarginDisplay();
+        this.updateButtonPosition();
+        this.checkIfCentered();
+      }
+    });
+    
+    // Check tab key
+    if (Phaser.Input.Keyboard.JustDown(this.tabKey)) {
+      this.propertyIndex = (this.propertyIndex + 1) % this.propertyOrder.length;
+      this.selectedProperty = this.propertyOrder[this.propertyIndex];
+      this.updatePropertyHighlight();
+      this.updateInstructionText();
+    }
+    
+    // Check arrow keys for fine control
+    if (Phaser.Input.Keyboard.JustDown(this.upKey)) {
+      this.marginValues[this.selectedProperty] = Math.min(200, this.marginValues[this.selectedProperty] + 5);
+      this.updateMarginDisplay();
+      this.updateButtonPosition();
+      this.checkIfCentered();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.downKey)) {
+      this.marginValues[this.selectedProperty] = Math.max(0, this.marginValues[this.selectedProperty] - 5);
+      this.updateMarginDisplay();
+      this.updateButtonPosition();
+      this.checkIfCentered();
+    }
+    
+    // Check ESC key
+    if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
+      this.closeComputerView();
+    }
+  }
+
+  /**
+   * Update instruction text based on selected property
+   */
+  updateInstructionText() {
+    if (this.instructionText) {
+      this.instructionText.setText(
+        `Use [1-9] to set margin-${this.selectedProperty} | [↑↓] fine adjust | [TAB] change property | [ESC] close`
+      );
+    }
+  }
+
+  /**
+   * Update the margin value display
+   */
+  updateMarginDisplay() {
+    Object.keys(this.marginValueTexts).forEach(key => {
+      this.marginValueTexts[key].setText(`${this.marginValues[key]}px;`);
+    });
+  }
+
+  /**
+   * Update property highlight
+   */
+  updatePropertyHighlight() {
+    Object.keys(this.marginHighlights).forEach(key => {
+      this.marginHighlights[key].setAlpha(key === this.selectedProperty ? 0.5 : 0);
+    });
+  }
+
+  /**
+   * Update button position based on margin values
+   */
+  updateButtonPosition() {
+    if (!this.targetButton || !this.containerBounds) return;
+    
+    // Calculate button position within container based on margins
+    // The button should be positioned relative to the container
+    const containerCenterX = this.containerBounds.x + this.containerBounds.width / 2;
+    const containerCenterY = this.containerBounds.y + this.containerBounds.height / 2;
+    
+    // Apply margins (left pushes right, top pushes down)
+    const buttonX = this.containerBounds.x + this.marginValues.left + 60;
+    const buttonY = this.containerBounds.y + this.marginValues.top + 20;
+    
+    this.targetButton.setPosition(buttonX, buttonY);
+    this.buttonText.setPosition(buttonX, buttonY);
+  }
+
+  /**
+   * Check if the button is centered
+   */
+  checkIfCentered() {
+    // Button is centered when margin-left = 140 (centers in 400px container with 120px button)
+    // (400 - 120) / 2 = 140
+    const targetMarginLeft = 140;
+    const targetMarginTop = 55; // Vertical center: (150 - 40) / 2 = 55
+    
+    const isHorizontallyCentered = Math.abs(this.marginValues.left - targetMarginLeft) <= 5;
+    const isVerticallyCentered = Math.abs(this.marginValues.top - targetMarginTop) <= 5;
+    
+    if (isHorizontallyCentered && isVerticallyCentered) {
+      this.completeCodeQuest();
     }
   }
 
   /**
    * Complete the coding quest
    */
-  completeCodingQuest() {
+  completeCodeQuest() {
+    if (this.codingQuestCompleted) return;
     this.codingQuestCompleted = true;
     
+    // Flash the button green
+    this.targetButton.setFillStyle(0x27ae60);
+    
     // Show success message
-    const successMsg = this.add.text(
+    const successText = this.add.text(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
-      'SUCCESS! Div Centered!\n+50 Gold  +200 XP',
+      '✓ PERFECTLY CENTERED!\n\n🎉 Quest Complete: CSS Master!\n+200 XP',
       {
-        fontSize: '28px',
+        fontSize: '24px',
         fill: '#00ff00',
         backgroundColor: '#000000',
-        padding: { x: 20, y: 15 },
+        padding: { x: 30, y: 20 },
         align: 'center',
-        fontStyle: 'bold'
+        fontFamily: 'Courier New'
       }
     );
-    successMsg.setOrigin(0.5);
-    successMsg.setScrollFactor(0);
-    successMsg.setDepth(3010);
+    successText.setOrigin(0.5);
+    successText.setScrollFactor(0);
+    successText.setDepth(2020);
+    this.devElements.push(successText);
     
-    // Fade out success message and close computer
+    // Close after delay
     this.time.delayedCall(3000, () => {
-      successMsg.destroy();
-      this.closeComputer();
+      this.closeComputerView();
       
-      // Show Tom's thank you message
+      // Show Tom's reaction
       this.time.delayedCall(500, () => {
-        this.dialogueManager.startDialogue("Tom", [
-          "Amazing! You fixed it!",
-          "I knew you could figure it out!",
-          "Thanks for the help!"
+        this.dialogueManager.startDialogue('Tom', [
+          "Whoa, you actually did it!",
+          "The button is perfectly centered now!",
+          "You're a CSS wizard! Thanks so much!"
         ]);
       });
     });
   }
 
   /**
-   * Close computer screen
+   * Close the computer view
    */
-  closeComputer() {
-    this.computerOpen = false;
+  closeComputerView() {
+    this.computerViewActive = false;
     
-    // Re-enable player movement
-    this.player.body.setAllowGravity(true);
-    
-    // Clean up UI elements
-    if (this.computerUIElements) {
-      this.computerUIElements.forEach(element => {
-        if (element) element.destroy();
+    // Destroy all dev tools elements
+    if (this.devElements) {
+      this.devElements.forEach(element => {
+        if (element && element.destroy) element.destroy();
       });
-      this.computerUIElements = null;
+      this.devElements = [];
     }
     
-    // Remove event listener
-    if (this.computerInputHandler) {
-      this.events.off('update', this.computerInputHandler);
-      this.computerInputHandler = null;
+    // Destroy overlay
+    if (this.computerOverlay) {
+      this.computerOverlay.destroy();
+      this.computerOverlay = null;
     }
     
-    // Remove keyboard keys
-    if (this.key1) {
-      this.input.keyboard.removeKey('ONE');
-      this.key1 = null;
+    // Clean up keyboard listeners
+    if (this.numberKeys) {
+      this.numberKeys.forEach(({ key }) => key.destroy());
+      this.numberKeys = [];
     }
-    if (this.key2) {
-      this.input.keyboard.removeKey('TWO');
-      this.key2 = null;
+    if (this.tabKey) {
+      this.tabKey.destroy();
+      this.tabKey = null;
     }
     if (this.escKey) {
-      this.input.keyboard.removeKey('ESC');
+      this.escKey.destroy();
       this.escKey = null;
     }
+    if (this.upKey) {
+      this.upKey.destroy();
+      this.upKey = null;
+    }
+    if (this.downKey) {
+      this.downKey.destroy();
+      this.downKey = null;
+    }
+    
+    // Clean up references
+    this.marginTexts = null;
+    this.marginValueTexts = null;
+    this.marginHighlights = null;
+    this.targetButton = null;
+    this.buttonText = null;
+    this.containerBounds = null;
   }
 }
 
