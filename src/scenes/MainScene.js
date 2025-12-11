@@ -794,16 +794,22 @@ export default class MainScene extends Phaser.Scene {
     
     this.endingSequenceActive = true;
     
-    // Stop player movement
+    // Stop player movement and play idle animation
     if (this.player) {
       this.player.setVelocity(0, 0);
       // Prevent player movement during ending sequence
       this.player.isDancing = true;
+      // Play idle animation based on last direction
+      const playerDirection = 'left';
+      this.player.play(`idle_${playerDirection}`, true);
     }
     
-    // Stop Luna's movement
+    // Stop Luna's movement and play idle animation
     if (this.lunaGirl) {
       this.lunaGirl.setVelocity(0, 0);
+      // Determine Luna's facing direction based on player position
+      const lunaDirection = this.player && this.player.x > this.lunaGirl.x ? 'right' : 'left';
+      this.lunaGirl.play(`girl_idle_${lunaDirection}`, true);
     }
     
     // Final dialogues from Luna
@@ -913,12 +919,17 @@ export default class MainScene extends Phaser.Scene {
     });
     
     // Fade out the scene slowly
-    this.cameras.main.fadeOut(8000, 0, 0, 0);
+    this.cameras.main.fadeOut(6000, 0, 0, 0);
     
     // Optional: Stop music with fade out
     if (this.musicManager) {
-      this.musicManager.stop(8000);
+      this.musicManager.stop(6000);
     }
+    
+    // When fade out completes, start Credits scene
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('CreditsScene');
+    });
   }
 
   /**
