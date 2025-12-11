@@ -110,5 +110,44 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   isOnGround() {
     return this.body.touching.down;
   }
+
+  handleClimbing() {
+    // Disable gravity while climbing
+    this.body.setAllowGravity(false);
+    
+    if (this.cursors.up.isDown) {
+      this.setVelocityY(-this.climbSpeed);
+      this.play('climb', true);
+    } else if (this.cursors.down.isDown) {
+      this.setVelocityY(this.climbSpeed);
+      this.play('climb', true);
+    } else {
+      this.setVelocityY(0);
+      // Stop animation on current frame when not moving
+      this.anims.pause();
+    }
+    
+    // Stop horizontal movement while climbing
+    this.setVelocityX(0);
+  }
+
+  startClimbing(climbingWall) {
+    this.isClimbing = true;
+    this.currentClimbingWall = climbingWall;
+    this.body.setAllowGravity(false);
+    this.setVelocityX(0);
+    this.setVelocityY(0);
+    // Position player on the wall
+    this.x = climbingWall.x;
+    this.play('climb', true);
+  }
+
+  stopClimbing() {
+    this.isClimbing = false;
+    this.currentClimbingWall = null;
+    this.body.setAllowGravity(true);
+    this.play('idle_down', true);
+    this.lastDirection = 'down';
+  }
 }
 

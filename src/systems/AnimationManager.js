@@ -10,6 +10,7 @@ export default class AnimationManager {
     this.createJumpAnimations();
     this.createIdleAnimations();
     this.createPlayerEmoteAnimations();
+    this.createClimbAnimations();
   }
 
   createNPCAnimations() {
@@ -24,6 +25,7 @@ export default class AnimationManager {
     this.createGirlEmoteAnimations();
     this.createPiepsieTailAnimation();
     this.createGirlJumpAnimations();
+    this.createGirlClimbAnimations();
   }
 
   createWalkAnimations() {
@@ -62,6 +64,19 @@ export default class AnimationManager {
     });
   }
 
+  createClimbAnimations() {
+    this.scene.anims.create({
+      key: 'climb',
+      frames: this.scene.anims.generateFrameNames('jojo_boy_climb', {
+        prefix: 'jojo_boy_back_',
+        start: 0,
+        end: 5
+      }),
+      frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
+    });
+  }
+
   createIdleAnimations() {
     const directions = ['down', 'up', 'left', 'right'];
     const prefixes = ['front', 'back', 'left', 'right'];
@@ -95,6 +110,19 @@ export default class AnimationManager {
         frameRate: ANIMATION_CONFIG.walkFrameRate,
         repeat: -1
       });
+    });
+  }
+
+  createGirlClimbAnimations() {
+    this.scene.anims.create({
+      key: 'girl_climb',
+      frames: this.scene.anims.generateFrameNames('jojo_girl_climb', {
+        prefix: 'jojo_girl_back_',
+        start: 0,
+        end: 5
+      }),
+      frameRate: ANIMATION_CONFIG.walkFrameRate,
+      repeat: -1
     });
   }
 

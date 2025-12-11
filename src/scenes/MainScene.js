@@ -49,7 +49,7 @@ export default class MainScene extends Phaser.Scene {
     this.piepsieX = 6000;
     this.campX = 9900;
     this.lockStockX = 7000;
-    this.inhanceX = 14000;
+    this.inhanceX = 14300;
     
     if (!this.registry.has('playerStats')) {
       this.registry.set('playerStats', {
@@ -150,10 +150,18 @@ export default class MainScene extends Phaser.Scene {
       this.obstaclesCreated = true;
     }
     
+    // Check climbing wall interaction
+    if (!this.isInCar && !this.endingSequenceActive) {
+      this.checkClimbingWallInteraction();
+    }
+    
     if (this.lunaGirl) {
       this.lunaGirl.update();
       
-      if (this.lunaDialogCompleted && !this.endingSequenceActive) {
+      // Handle Luna climbing
+      if (this.lunaGirl.isClimbing) {
+        this.updateLunaClimbing();
+      } else if (this.lunaDialogCompleted && !this.endingSequenceActive) {
         this.updateLunaFollowBehavior();
       }
     }
@@ -1399,6 +1407,20 @@ export default class MainScene extends Phaser.Scene {
       return;
     }
     
+    // If player is climbing, Luna should run to the wall
+    if (this.player.isClimbing && this.climbingWallParams) {
+      const distToWall = Math.abs(this.lunaGirl.x - this.climbingWallParams.x);
+      if (distToWall > 30) {
+        const direction = this.climbingWallParams.x > this.lunaGirl.x ? 1 : -1;
+        this.lunaGirl.setVelocityX(direction * 140);
+        const animDir = direction > 0 ? 'right' : 'left';
+        if (this.lunaGirl.anims.currentAnim?.key !== `girl_run_${animDir}`) {
+          this.lunaGirl.play(`girl_run_${animDir}`, true);
+        }
+        return;
+      }
+    }
+    
     const distance = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
@@ -1419,9 +1441,8 @@ export default class MainScene extends Phaser.Scene {
       
       const speed = distance > runDistance ? 140 : 80;
       
-      this.lunaGirl.setVelocity(
-        Math.cos(angle) * speed,
-        0
+      this.lunaGirl.setVelocityX(
+        Math.cos(angle) * speed
       );
       
       let nearObstacle = false;
@@ -1691,6 +1712,277 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.player, rock);
     this.physics.add.collider(this.car, rock);
 
+    // Rock climbing wall at x = 13800 - too tall to jump over
+    this.createClimbingWall(13600, groundY);
+    this.platform13750 = this.createPlatform(13750, groundY - 220, 'platform_3');
+    this.physics.add.collider(this.lunaGirl, this.platform13750);
+
+    this.createSpikes(13700, groundY + 20, 100);
+
+  }
+
+  /**
+   * Create a rock climbing wall that's too tall to jump over
+   * @param {number} x - X position of the wall
+   * @param {number} groundY - Ground Y position
+   */
+  createClimbingWall(x, groundY) {
+    const wallWidth = 60;
+    const wallHeight = 400; 
+    
+    const climbingWall = this.add.container(x, groundY - wallHeight / 2);
+    
+    const wallBody = this.add.rectangle(0, 0, wallWidth, wallHeight, 0x5a4a3a);
+    wallBody.setStrokeStyle(3, 0x3d3128);
+    
+    const rockPattern = this.add.graphics();
+    rockPattern.fillStyle(0x6b5b4b, 0.5);
+    
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 2; col++) {
+        const offsetX = (col - 0.5) * 25 + (row % 2) * 10;
+        const offsetY = (row - 3.5) * 50;
+        rockPattern.fillRoundedRect(offsetX - 10, offsetY - 20, 20, 40, 5);
+      }
+    }
+    
+    const holdColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff];
+    const holds = [];
+    
+    const holdPositions = [
+      { x: -15, y: -150 },
+      { x: 10, y: -100 },
+      { x: -10, y: -50 },
+      { x: 15, y: 0 },
+      { x: -12, y: 50 },
+      { x: 8, y: 100 },
+      { x: -8, y: 150 },
+    ];
+    
+    holdPositions.forEach((pos, i) => {
+      const holdColor = holdColors[i % holdColors.length];
+      const hold = this.add.ellipse(pos.x, pos.y, 14, 14, holdColor);
+      hold.setStrokeStyle(1, 0x333333);
+      holds.push(hold);
+    });
+    
+    const shadow = this.add.ellipse(0, wallHeight / 2 + 5, wallWidth + 20, 15, 0x000000, 0.3);
+    
+    const wallCap = this.add.rectangle(0, -wallHeight / 2, wallWidth + 10, 15, 0x4a3a2a);
+    wallCap.setStrokeStyle(2, 0x3d3128);
+    
+    climbingWall.add([shadow, wallBody, rockPattern, ...holds, wallCap]);
+    
+    this.physics.add.existing(climbingWall, true);
+    climbingWall.body.setSize(wallWidth, wallHeight - 50);
+    climbingWall.body.setOffset(-wallWidth / 2 + 35, -wallHeight / 2 + 25);
+    climbingWall.setDepth(900);
+    
+    // Store collider so we can disable it during climbing
+    this.climbingWallCollider = this.physics.add.collider(this.player, climbingWall);
+    this.physics.add.collider(this.car, climbingWall);
+    
+    this.climbingWall = climbingWall;
+    
+    // Store climbing wall parameters for interaction detection
+    this.climbingWallParams = {
+      x: x,
+      width: wallWidth,
+      height: wallHeight,
+      groundY: groundY,
+      topY: groundY - wallHeight - 80
+    };
+    
+    return climbingWall;
+  }
+
+  checkClimbingWallInteraction() {
+    if (!this.player || !this.climbingWall || !this.climbingWallParams) return;
+    
+    const params = this.climbingWallParams;
+    const player = this.player;
+    
+    // Check if player is near the climbing wall horizontally
+    const distanceX = Math.abs(player.x - params.x);
+    const nearWall = distanceX < params.width + 20;
+    
+    // Check if player is at the base of the wall (on the ground near the wall)
+    const playerBottom = player.y + player.height / 2;
+    const atWallBase = playerBottom >= params.groundY - 50 && nearWall;
+    
+    if (player.isClimbing) {
+      // Disable collision while climbing
+      if (this.climbingWallCollider) {
+        this.climbingWallCollider.active = false;
+      }
+      
+      // Check if player has reached the top of the wall
+      if (player.y <= params.topY + 50) {
+        // Player reached the top - stop climbing and move them over the wall
+        this.finishClimbing(params);
+        return;
+      }
+      
+      // Check if player climbed down to the ground
+      if (playerBottom >= params.groundY - 10 && player.body.velocity.y > 0) {
+        this.stopPlayerClimbing();
+        return;
+      }
+    } else {
+      // Re-enable collision when not climbing
+      if (this.climbingWallCollider) {
+        this.climbingWallCollider.active = true;
+      }
+      
+      // Not climbing - check if player wants to start climbing
+      // Player must be at the base of the wall and pressing up
+      if (atWallBase && this.player.cursors.up.isDown && player.body.touching.down) {
+        // Player is near wall base and pressing up - start climbing
+        this.startPlayerClimbing(params);
+      }
+    }
+  }
+
+  startPlayerClimbing(params) {
+    const player = this.player;
+    
+    // Disable collision with wall while climbing
+    if (this.climbingWallCollider) {
+      this.climbingWallCollider.active = false;
+    }
+    
+    // Start climbing
+    player.startClimbing(this.climbingWall);
+    player.x = params.x; // Center on wall
+    
+    // Make Luna follow and start climbing after a short delay
+    if (this.lunaGirl && this.lunaDialogCompleted && !this.lunaGirl.isClimbing) {
+      this.time.delayedCall(2000, () => {
+        this.startLunaClimbing(params);
+      });
+    }
+  }
+
+  startLunaClimbing(params) {
+    if (!this.lunaGirl || this.lunaGirl.isClimbing) return;
+    
+    this.lunaGirl.isClimbing = true;
+    this.lunaGirl.body.setAllowGravity(false);
+    this.lunaGirl.setVelocityX(0);
+    this.lunaGirl.setVelocityY(0);
+    
+    // Position Luna at the base of the wall
+    this.lunaGirl.x = params.x - 15; // Slightly offset from player
+    this.lunaGirl.play('girl_climb', true);
+  }
+
+  updateLunaClimbing() {
+    if (!this.lunaGirl || !this.lunaGirl.isClimbing || !this.climbingWallParams) return;
+    
+    const params = this.climbingWallParams;
+    const luna = this.lunaGirl;
+    
+    // Luna climbs up following the player
+    if (this.player && this.player.isClimbing) {
+      // Luna climbs up to follow player
+      const targetY = this.player.y + 60; // Stay below player
+      
+      if (luna.y > targetY) {
+        luna.setVelocityY(-100); // Climb speed for Luna
+        if (luna.anims.currentAnim?.key !== 'girl_climb') {
+          luna.play('girl_climb', true);
+        } else if (luna.anims.isPaused) {
+          luna.anims.resume();
+        }
+      } else {
+        luna.setVelocityY(0);
+        luna.anims.pause();
+      }
+    } else if (!this.player.isClimbing && luna.isClimbing) {
+      // Player finished climbing, Luna should finish too
+      luna.setVelocityY(-100); // Continue climbing to the top
+      if (luna.anims.currentAnim?.key !== 'girl_climb') {
+        luna.play('girl_climb', true);
+      } else if (luna.anims.isPaused) {
+        luna.anims.resume();
+      }
+    }
+    
+    // Check if Luna reached the top
+    if (luna.y <= params.topY + 80) {
+      this.finishLunaClimbing(params);
+    }
+  }
+
+  finishLunaClimbing(params) {
+    if (!this.lunaGirl) return;
+    
+    const luna = this.lunaGirl;
+    
+    // Stop climbing state
+    luna.isClimbing = false;
+    luna.body.setAllowGravity(true);
+    
+    // Position Luna at the top of the wall
+    luna.setPosition(params.x + params.width / 2 - 40, params.topY + 40);
+    luna.setVelocity(0, 0);
+
+    this.lunaClimbingWallCollider = this.physics.add.collider(luna, this.climbingWall);
+    
+    // Play landing/idle animation briefly
+    luna.play('girl_idle_down', true);
+
+    
+    // // After a short pause, jump off to the right
+    // this.time.delayedCall(1000, () => {
+    //   if (this.lunaGirl) {
+    //     // Jump to the right
+    //     this.lunaGirl.play('girl_jump_right', true);
+    //     this.lunaGirl.setVelocity(150, -300); // Jump right and up
+        
+    //     // After landing, return to normal follow behavior
+    //     this.time.delayedCall(500, () => {
+    //       if (this.lunaGirl && this.lunaGirl.body.touching.down) {
+    //         this.lunaGirl.play('girl_idle_right', true);
+    //       }
+    //     });
+    //   }
+    // });
+  }
+
+  stopPlayerClimbing() {
+    const player = this.player;
+    
+    // Re-enable collision
+    if (this.climbingWallCollider) {
+      this.climbingWallCollider.active = true;
+    }
+    
+    player.stopClimbing();
+  }
+
+  finishClimbing(params) {
+    const player = this.player;
+    
+    // Stop climbing state
+    player.isClimbing = false;
+    player.currentClimbingWall = null;
+    player.body.setAllowGravity(true);
+    
+    // Move player to the top of the wall on the other side
+    player.setPosition(params.x + params.width / 2 - 20, params.topY + 20);
+    player.setVelocity(0, 0);
+    
+    // Play forward idle animation
+    player.play('idle_down', true);
+    player.lastDirection = 'down';
+    
+    // Re-enable collision after a short delay (so player doesn't get pushed back)
+    this.time.delayedCall(500, () => {
+      if (this.climbingWallCollider) {
+        this.climbingWallCollider.active = true;
+      }
+    });
   }
 
   createRock(x, y, scale = 1.5) {
