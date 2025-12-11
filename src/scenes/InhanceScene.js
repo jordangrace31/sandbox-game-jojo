@@ -667,7 +667,197 @@ export default class InhanceScene extends Phaser.Scene {
     const screenWidth = 900;
     const screenHeight = 550;
     const screenX = GAME_CONFIG.width / 2;
-    const screenY = GAME_CONFIG.height / 2;
+    const screenY = GAME_CONFIG.height / 2 - 30; // Shift up to make room for stand
+    
+    // === MONITOR FRAME ===
+    const bezelThickness = 20;
+    const monitorWidth = screenWidth + bezelThickness * 2;
+    const monitorHeight = screenHeight + bezelThickness * 2;
+    
+    // Monitor outer shadow (gives depth)
+    const monitorShadow = this.add.rectangle(
+      screenX + 8,
+      screenY + 8,
+      monitorWidth + 4,
+      monitorHeight + 4,
+      0x000000,
+      0.5
+    );
+    monitorShadow.setScrollFactor(0);
+    monitorShadow.setDepth(2000);
+    this.devElements.push(monitorShadow);
+    
+    // Monitor bezel (main frame)
+    const monitorBezel = this.add.rectangle(
+      screenX,
+      screenY,
+      monitorWidth,
+      monitorHeight,
+      0x1a1a1a
+    );
+    monitorBezel.setScrollFactor(0);
+    monitorBezel.setDepth(2000);
+    this.devElements.push(monitorBezel);
+    
+    // Inner bezel highlight (subtle 3D effect)
+    const innerHighlight = this.add.rectangle(
+      screenX,
+      screenY,
+      monitorWidth - 4,
+      monitorHeight - 4,
+      0x2a2a2a
+    );
+    innerHighlight.setScrollFactor(0);
+    innerHighlight.setDepth(2000);
+    this.devElements.push(innerHighlight);
+    
+    // Screen inset (dark border around screen)
+    const screenInset = this.add.rectangle(
+      screenX,
+      screenY,
+      screenWidth + 4,
+      screenHeight + 4,
+      0x0a0a0a
+    );
+    screenInset.setScrollFactor(0);
+    screenInset.setDepth(2000);
+    this.devElements.push(screenInset);
+    
+    // Monitor logo/brand on bezel
+    const brandLogo = this.add.text(
+      screenX,
+      screenY + monitorHeight / 2 - 10,
+      '◆ INHANCE',
+      {
+        fontSize: '10px',
+        fill: '#4a4a4a',
+        fontFamily: 'Arial',
+        fontStyle: 'bold'
+      }
+    );
+    brandLogo.setOrigin(0.5);
+    brandLogo.setScrollFactor(0);
+    brandLogo.setDepth(2001);
+    this.devElements.push(brandLogo);
+    
+    // Power LED indicator
+    const powerLed = this.add.circle(
+      screenX + monitorWidth / 2 - 30,
+      screenY + monitorHeight / 2 - 10,
+      3,
+      0x00ff00
+    );
+    powerLed.setScrollFactor(0);
+    powerLed.setDepth(2001);
+    this.devElements.push(powerLed);
+    
+    // LED glow effect
+    const ledGlow = this.add.circle(
+      screenX + monitorWidth / 2 - 30,
+      screenY + monitorHeight / 2 - 10,
+      6,
+      0x00ff00,
+      0.3
+    );
+    ledGlow.setScrollFactor(0);
+    ledGlow.setDepth(2001);
+    this.devElements.push(ledGlow);
+    
+    // === MONITOR STAND ===
+    const standNeckHeight = 40;
+    const standNeckWidth = 60;
+    const standBaseWidth = 180;
+    const standBaseHeight = 15;
+    const standY = screenY + monitorHeight / 2 + bezelThickness;
+    
+    // Stand neck
+    const standNeck = this.add.rectangle(
+      screenX,
+      standY + standNeckHeight / 2,
+      standNeckWidth,
+      standNeckHeight,
+      0x1a1a1a
+    );
+    standNeck.setScrollFactor(0);
+    standNeck.setDepth(2000);
+    this.devElements.push(standNeck);
+    
+    // Stand neck shadow
+    const neckShadow = this.add.rectangle(
+      screenX + 4,
+      standY + standNeckHeight / 2 + 4,
+      standNeckWidth,
+      standNeckHeight,
+      0x000000,
+      0.3
+    );
+    neckShadow.setScrollFactor(0);
+    neckShadow.setDepth(1999);
+    this.devElements.push(neckShadow);
+    
+    // Stand base
+    const standBase = this.add.ellipse(
+      screenX,
+      standY + standNeckHeight + standBaseHeight / 2,
+      standBaseWidth,
+      standBaseHeight * 2,
+      0x1a1a1a
+    );
+    standBase.setScrollFactor(0);
+    standBase.setDepth(2000);
+    this.devElements.push(standBase);
+    
+    // Stand base highlight
+    const baseHighlight = this.add.ellipse(
+      screenX,
+      standY + standNeckHeight + standBaseHeight / 2 - 2,
+      standBaseWidth - 20,
+      standBaseHeight,
+      0x2a2a2a
+    );
+    baseHighlight.setScrollFactor(0);
+    baseHighlight.setDepth(2000);
+    this.devElements.push(baseHighlight);
+    
+    // Stand base shadow
+    const baseShadow = this.add.ellipse(
+      screenX + 5,
+      standY + standNeckHeight + standBaseHeight / 2 + 5,
+      standBaseWidth + 10,
+      standBaseHeight * 2,
+      0x000000,
+      0.4
+    );
+    baseShadow.setScrollFactor(0);
+    baseShadow.setDepth(1998);
+    this.devElements.push(baseShadow);
+    
+    // === SCREEN EFFECTS ===
+    // Subtle screen glow
+    const screenGlow = this.add.rectangle(
+      screenX,
+      screenY,
+      screenWidth + 30,
+      screenHeight + 30,
+      0x4a90e2,
+      0.05
+    );
+    screenGlow.setScrollFactor(0);
+    screenGlow.setDepth(2000);
+    this.devElements.push(screenGlow);
+    
+    // Screen reflection/glare (subtle diagonal shine)
+    const screenGlare = this.add.graphics();
+    screenGlare.setScrollFactor(0);
+    screenGlare.setDepth(2010);
+    screenGlare.fillStyle(0xffffff, 0.02);
+    screenGlare.beginPath();
+    screenGlare.moveTo(screenX - screenWidth / 2, screenY - screenHeight / 2);
+    screenGlare.lineTo(screenX - screenWidth / 2 + 200, screenY - screenHeight / 2);
+    screenGlare.lineTo(screenX - screenWidth / 2, screenY - screenHeight / 2 + 150);
+    screenGlare.closePath();
+    screenGlare.fillPath();
+    this.devElements.push(screenGlare);
     
     // Browser chrome (top bar)
     this.browserChrome = this.add.rectangle(screenX, screenY - screenHeight / 2 + 20, screenWidth, 40, 0x3c3c3c);
@@ -867,16 +1057,16 @@ export default class InhanceScene extends Phaser.Scene {
     // Update button position based on margins
     this.updateButtonPosition();
     
-    // Instructions
+    // Instructions (positioned below the monitor stand)
     this.instructionText = this.add.text(
       screenX,
-      screenY + screenHeight / 2 - 25,
-      'Use number keys [1-9] to adjust margin-left. Center the Poo button! | Press [TAB] to change property | [ESC] to close',
+      screenY + screenHeight / 2 + 100,
+      'Use [1-9] to set margin-left | [↑↓] fine adjust | [TAB] change property | [ESC] close',
       {
-        fontSize: '15px',
+        fontSize: '14px',
         fill: '#00ff00',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 },
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        padding: { x: 15, y: 8 },
         fontFamily: 'Courier New'
       }
     );
@@ -1194,7 +1384,7 @@ export default class InhanceScene extends Phaser.Scene {
       // Show Tom's reaction
       this.time.delayedCall(500, () => {
         this.dialogueManager.startDialogue('Tom', [
-          "Whoa, you actually did it!",
+          "Nice, thanks man!",
           "The button is perfectly centered now!",
           "You're a CSS wizard! Thanks so much!"
         ]);
