@@ -71,6 +71,8 @@ export default class MainScene extends Phaser.Scene {
     
     this.createCollectibles();
 
+    this.createGhosts();
+
     this.createCar();
     
     this.createStatsUI();
@@ -486,6 +488,38 @@ export default class MainScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.keys,
       y: keysY - 10,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  createGhosts() {
+    const ghostX = 12770;
+    const ghostY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 480;
+
+    this.ghost = this.add.sprite(ghostX, ghostY, 'ghost');
+    const ghost2 = this.add.sprite(ghostX + 50, ghostY, 'ghost');
+    this.ghost.setOrigin(0.5);
+    this.ghost.setDepth(900);
+    this.ghost.setScale(0.25);
+    ghost2.setOrigin(0.5);
+    ghost2.setDepth(900);
+    ghost2.setScale(0.25);
+
+    this.tweens.add({
+      targets: this.ghost,
+      y: ghostY - 10,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    this.tweens.add({
+      targets: ghost2,
+      y: ghostY - 10,
       duration: 1000,
       yoyo: true,
       repeat: -1,
@@ -1633,6 +1667,7 @@ export default class MainScene extends Phaser.Scene {
     this.createPlatform(11350, groundY - 350, 'platform_1');
     this.createTree(11360, groundY - 462, 1.2, 'platform', 'tree_1');
     this.createPlatform(11700, groundY - 350, 'platform_1');
+    this.createPlatform(12800, groundY - 390, 'platform_0');
 
     this.createSpikes(10700, groundY + 20, 2200);
 

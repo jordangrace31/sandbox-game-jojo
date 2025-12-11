@@ -189,6 +189,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('piepsie-tail-2', 'assets/images/piepsie-tail-2-bgr.png');
     this.load.image('piepsie-hearts-1', 'assets/images/piepsie-hearts-1.png');
     this.load.image('piepsie-hearts-2', 'assets/images/piepsie-hearts-2.png');
+    this.load.image('ghost', 'assets/images/spook-bgr.png');
   }
 
   loadAudioAssets() {
