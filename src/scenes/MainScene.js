@@ -111,6 +111,12 @@ export default class MainScene extends Phaser.Scene {
     // Track player death state
     this.playerIsDead = false;
     
+    // Track ending sequence state
+    this.endingSequenceTriggered = false;
+    this.endingDialogCompleted = false;
+    this.endingSequenceActive = false;
+    this.endingAnimationsStarted = false;
+    
     // Obstacles (will be created after Luna dialog)
     this.rockObstacle = null;
     this.spikes = null;
@@ -139,15 +145,16 @@ export default class MainScene extends Phaser.Scene {
       // Check if we're returning from InhanceScene
       const returningFromInhance = this.registry.get('returningFromInhance');
       
+      // Mark Inhance quest as completed when returning from InhanceScene
+      if (returningFromInhance && !this.inhanceQuestCompleted) {
+        this.inhanceQuestCompleted = true;
+      }
+      
       // Restart music when scene resumes
       if (this.musicManager) {
         // If returning from InhanceScene, continue shell music instead of switching
-        if (returningFromInhance) {
+        if (!returningFromInhance) {
           // Clear the flag
-          this.registry.set('returningFromInhance', false);
-        
-        } else {
-          // Stop any currently playing music
           this.musicManager.stop(0);
           // Small delay to ensure cleanup is complete before starting new music
           this.time.delayedCall(100, () => {
@@ -155,6 +162,7 @@ export default class MainScene extends Phaser.Scene {
               this.musicManager.play('dear_katara', 0.5, true, 2000);
             }
           });
+        
         }
       }
     });
@@ -183,8 +191,8 @@ export default class MainScene extends Phaser.Scene {
     if (this.lunaGirl) {
       this.lunaGirl.update();
       
-      // Make Luna follow player after dialog is completed
-      if (this.lunaDialogCompleted) {
+      // Make Luna follow player after dialog is completed (but not during ending sequence)
+      if (this.lunaDialogCompleted && !this.endingSequenceActive) {
         this.updateLunaFollowBehavior();
       }
     }
@@ -203,8 +211,13 @@ export default class MainScene extends Phaser.Scene {
       this.updateCarInteraction();
     }
 
-    // Only allow interactions and triggers when not inside the car
-    if (!this.isInCar) {
+    // Check for ending sequence trigger (can happen even in car)
+    if (!this.endingSequenceActive) {
+      this.checkEndingSequenceTrigger();
+    }
+    
+    // Only allow other interactions and triggers when not inside the car and not in ending sequence
+    if (!this.isInCar && !this.endingSequenceActive) {
       // Check for NPC interactions
       this.checkNPCInteractions();
       
@@ -222,6 +235,11 @@ export default class MainScene extends Phaser.Scene {
       
       // Check for Inhance scene trigger
       this.checkInhanceTrigger();
+    }
+    
+    // Update ending sequence if active
+    if (this.endingSequenceActive) {
+      this.updateEndingSequence();
     }
   }
 
@@ -736,6 +754,170 @@ export default class MainScene extends Phaser.Scene {
     if (distance < triggerRange) {
       this.inhanceQuestTriggered = true;
       this.startInhanceScene();
+    }
+  }
+
+  /**
+   * Check if player has reached the ending sequence trigger (x = 14300)
+   */
+  checkEndingSequenceTrigger() {
+    if (!this.player || this.endingSequenceTriggered || !this.inhanceQuestCompleted) return;
+    
+    const triggerX = 14300;
+    const triggerRange = 50;
+    
+    // Check player position (or car position if in car)
+    const checkX = this.isInCar && this.car ? this.car.x : this.player.x;
+    const distance = Math.abs(checkX - triggerX);
+    
+    if (distance < triggerRange) {
+      this.endingSequenceTriggered = true;
+      
+      // If in car, exit first
+      if (this.isInCar) {
+        this.exitCar();
+        // Wait a moment for exit animation, then start ending sequence
+        this.time.delayedCall(500, () => {
+          this.startEndingSequence();
+        });
+      } else {
+        this.startEndingSequence();
+      }
+    }
+  }
+
+  /**
+   * Start the ending sequence with final dialogues
+   */
+  startEndingSequence() {
+    if (this.endingSequenceActive) return;
+    
+    this.endingSequenceActive = true;
+    
+    // Stop player movement
+    if (this.player) {
+      this.player.setVelocity(0, 0);
+      // Prevent player movement during ending sequence
+      this.player.isDancing = true;
+    }
+    
+    // Stop Luna's movement
+    if (this.lunaGirl) {
+      this.lunaGirl.setVelocity(0, 0);
+    }
+    
+    // Final dialogues from Luna
+    const finalDialogues = [
+      "Yay! We made it! Look how far we've come together.",
+      "Thank you for everything, pudding.",
+      "You are extraodinary, and I'm in awe of you daily.",
+      "You are the most geniune, raw, authentic, and free-spirited person. I feel like I learn somthing new every day.",
+      "Having you by my side and in my corner has made me the most comfortable, happy, and free I've ever been. I'm the luckiest girl in world.",
+      "This is such a small snippet of our lives together, and I wish I had more time to work on this. But hopefully this could be something we work on together.",
+      "I know it'll be way more fun when I have you here with me.",
+      "Love you poopy pants. And happy birthday. 27 never looked so handsome. <3"
+    ];
+    
+    // Start the dialogue sequence
+    this.dialogueManager.startDialogue("Jordan", finalDialogues);
+    
+    // Monitor when dialogue completes
+    this.endingDialogueCheck = this.time.addEvent({
+      delay: 100,
+      callback: () => {
+        if (!this.dialogueManager.isDialogueActive() && !this.endingDialogCompleted) {
+          this.endingDialogCompleted = true;
+          if (this.endingDialogueCheck) {
+            this.endingDialogueCheck.remove();
+          }
+          this.playEndingAnimations();
+        }
+      },
+      repeat: 600 // Check for 60 seconds
+    });
+  }
+
+  /**
+   * Update ending sequence (monitor dialogue completion)
+   */
+  updateEndingSequence() {
+    if (this.endingDialogCompleted && !this.endingAnimationsStarted) {
+      // This will be handled by the delayed check in startEndingSequence
+      return;
+    }
+  }
+
+  /**
+   * Play emote animations and fade out with "The End" banner
+   */
+  playEndingAnimations() {
+    if (this.endingAnimationsStarted) return;
+    this.endingAnimationsStarted = true;
+    
+    // Play emote animations for both player and Luna
+    if (this.player) {
+      this.player.play('player_emote');
+      // Disable player movement completely
+      this.player.isDancing = true;
+    }
+    
+    if (this.lunaGirl) {
+      this.lunaGirl.play('girl_emote');
+      this.lunaGirl.setVelocity(0, 0);
+    }
+    
+    // Create "The End" banner matching title banner style
+    const bannerY = GAME_CONFIG.height / 2 - 50;
+    
+    const endText = this.add.text(
+      GAME_CONFIG.width / 2,
+      bannerY,
+      'The End',
+      {
+        fontSize: '72px',
+        fontFamily: 'Arial, sans-serif',
+        fontStyle: 'bold',
+        fill: '#ffffff',
+        stroke: '#2c5f8d',
+        strokeThickness: 8,
+        shadow: {
+          offsetX: 4,
+          offsetY: 4,
+          color: '#000000',
+          blur: 10,
+          fill: true
+        }
+      }
+    );
+    endText.setOrigin(0.5);
+    endText.setScrollFactor(0);
+    endText.setDepth(3001);
+    endText.setAlpha(0);
+    
+    // Fade in animation
+    this.tweens.add({
+      targets: endText,
+      alpha: 1,
+      duration: 1500,
+      ease: 'Power2'
+    });
+    
+    // Gentle floating animation
+    this.tweens.add({
+      targets: endText,
+      y: '+=10',
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    // Fade out the scene slowly
+    this.cameras.main.fadeOut(10000, 0, 0, 0);
+    
+    // Optional: Stop music with fade out
+    if (this.musicManager) {
+      this.musicManager.stop(10000);
     }
   }
 

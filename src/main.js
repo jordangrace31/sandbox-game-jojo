@@ -20,7 +20,7 @@ const config = {
   backgroundColor: GAME_CONFIG.backgroundColor,
   physics: GAME_CONFIG.physics,
   scene: [
-    // IntroScene,
+    IntroScene,
     PreloadScene,
     MainScene,
     CampScene,
