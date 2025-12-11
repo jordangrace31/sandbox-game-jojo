@@ -1423,7 +1423,7 @@ export default class InhanceScene extends Phaser.Scene {
       '$ git status',
       'On branch main',
       'Changes not staged for commit:',
-      '  modified:   src/styles/button.css',
+      '  modified:   src/styles/poo-button.css',
       '',
       'no changes added to commit (use "git add <file>..." to stage)'
     ];

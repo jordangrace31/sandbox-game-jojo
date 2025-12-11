@@ -1,8 +1,3 @@
-/**
- * MainScene
- * Main gameplay scene where the player can move around, interact with NPCs, etc.
- */
-
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
@@ -19,10 +14,8 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
-    // Set world bounds to larger than screen for exploration
     this.physics.world.setBounds(0, 0, WORLD_CONFIG.width, WORLD_CONFIG.height);
     
-    // Initialize systems
     if (!this.animationManager) {
       this.animationManager = new AnimationManager(this);
       this.animationManager.createPlayerAnimations();
@@ -33,7 +26,6 @@ export default class MainScene extends Phaser.Scene {
     this.questManager = new QuestManager(this);
     this.musicManager = new MusicManager(this);
     
-    // Track quest status
     this.hamiltonQuestActive = false;
     this.hamiltonQuestCompleted = false;
     this.campQuestTriggered = false;
@@ -43,7 +35,6 @@ export default class MainScene extends Phaser.Scene {
     this.inhanceQuestTriggered = false;
     this.inhanceQuestCompleted = false;
 
-    // Car / keys state
     this.isInCar = false;
     this.car = null;
     this.carPrompt = null;
@@ -51,7 +42,6 @@ export default class MainScene extends Phaser.Scene {
     this.keys = null;
     this.keysPrompt = null;
 
-    // Luna state while using the car
     this.lunaHiddenInCar = false;
 
     this.lunaX = 4300;
@@ -61,7 +51,6 @@ export default class MainScene extends Phaser.Scene {
     this.lockStockX = 7000;
     this.inhanceX = 14000;
     
-    // Player stats - store in registry to share across scenes
     if (!this.registry.has('playerStats')) {
       this.registry.set('playerStats', {
         gold: 0,
@@ -71,53 +60,39 @@ export default class MainScene extends Phaser.Scene {
     }
     this.playerStats = this.registry.get('playerStats');
     
-    // Create the world (order matters - background to foreground)
     this.createSky();
     this.createClouds();
     this.createGround();
     
-    // Create the player
     this.player = new Player(this, PLAYER_CONFIG.startX, PLAYER_CONFIG.startY);
     this.player.setDepth(PLAYER_CONFIG.depth);
     
-    // Create NPCs
     this.createNPCs();
     
-    // Create collectibles
     this.createCollectibles();
 
-    // Create car
     this.createCar();
     
-    // Create UI
     this.createStatsUI();
     
-    // Set up camera to follow player
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.cameras.main.setBounds(0, 0, WORLD_CONFIG.width, WORLD_CONFIG.height);
     
-    // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
     
-    // Set up interaction key
     this.interactionKey = this.input.keyboard.addKey('E');
     
-    // Track dialogue index for cycling through dialogues
     this.currentDialogueIndex = 0;
     
-    // Track if dialog has been completed with Luna
     this.lunaDialogCompleted = false;
     
-    // Track player death state
     this.playerIsDead = false;
     
-    // Track ending sequence state
     this.endingSequenceTriggered = false;
     this.endingDialogCompleted = false;
     this.endingSequenceActive = false;
     this.endingAnimationsStarted = false;
     
-    // Obstacles (will be created after Luna dialog)
     this.rockObstacle = null;
     this.spikes = null;
     this.ladder = null;
@@ -126,37 +101,26 @@ export default class MainScene extends Phaser.Scene {
     this.platform3 = null;
     this.obstaclesCreated = false; // Guard flag to prevent multiple creation
     
-    // Show welcome dialog after a short delay
     this.time.delayedCall(500, () => {
       this.showWelcomeDialog();
     });
 
-    // Start background music with fade in
     this.musicManager.play('dear_katara', 0.5, true, 2000);
     
-    // Set up scene resume event to restart music when returning from other scenes
     this.events.on('resume', () => {
-      // Update player stats from registry (may have changed in other scenes)
       this.playerStats = this.registry.get('playerStats');
       
-      // Update stats UI to reflect any changes
       this.updateStatsUI(true, true, true);
       
-      // Check if we're returning from InhanceScene
       const returningFromInhance = this.registry.get('returningFromInhance');
       
-      // Mark Inhance quest as completed when returning from InhanceScene
       if (returningFromInhance && !this.inhanceQuestCompleted) {
         this.inhanceQuestCompleted = true;
       }
       
-      // Restart music when scene resumes
       if (this.musicManager) {
-        // If returning from InhanceScene, continue shell music instead of switching
         if (!returningFromInhance) {
-          // Clear the flag
           this.musicManager.stop(0);
-          // Small delay to ensure cleanup is complete before starting new music
           this.time.delayedCall(100, () => {
             if (this.musicManager) {
               this.musicManager.play('dear_katara', 0.5, true, 2000);
@@ -169,29 +133,24 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update() {
-    // Update player movement or car movement depending on state
     if (this.isInCar) {
       this.updateCarMovement();
     } else {
       this.player.update();
     }
     
-    // Update dialogue manager
     if (this.dialogueManager) {
       this.dialogueManager.update();
     }
 
-    // Create obstacles only once
     if (!this.obstaclesCreated) {
       this.createObstacles();
       this.obstaclesCreated = true;
     }
     
-    // Update NPCs
     if (this.lunaGirl) {
       this.lunaGirl.update();
       
-      // Make Luna follow player after dialog is completed (but not during ending sequence)
       if (this.lunaDialogCompleted && !this.endingSequenceActive) {
         this.updateLunaFollowBehavior();
       }
@@ -206,38 +165,28 @@ export default class MainScene extends Phaser.Scene {
       this.updatePiepsieAnimation();
     }
 
-    // Handle car enter/exit interaction
     if (this.car) {
       this.updateCarInteraction();
     }
 
-    // Check for ending sequence trigger (can happen even in car)
     if (!this.endingSequenceActive) {
       this.checkEndingSequenceTrigger();
     }
     
-    // Only allow other interactions and triggers when not inside the car and not in ending sequence
     if (!this.isInCar && !this.endingSequenceActive) {
-      // Check for NPC interactions
       this.checkNPCInteractions();
       
-      // Check for bottle collection
       this.checkBottleCollection();
       
-      // Check for keys collection
       this.checkKeysCollection();
       
-      // Check for camp quest trigger
       this.checkCampQuestTrigger();
       
-      // Check for Lock Stock scene trigger
       this.checkLockStockTrigger();
       
-      // Check for Inhance scene trigger
       this.checkInhanceTrigger();
     }
     
-    // Update ending sequence if active
     if (this.endingSequenceActive) {
       this.updateEndingSequence();
     }
@@ -442,23 +391,17 @@ export default class MainScene extends Phaser.Scene {
     this.bigTree.setScale(1.5);
   }
 
-  /**
-   * Create all NPCs in the scene
-   */
   createNPCs() {
     const lunaData = getNPCData('jojoGirl');
     
-    // Position Luna on the right side of the world
     const lunaX = this.lunaX;
     const lunaY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight - 32;
     
     this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
     this.lunaGirl.setDepth(lunaData.depth);
     
-    // Make Luna stand idle initially
     this.lunaGirl.play('girl_idle_down');
     
-    // Add collision with ground
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
 
     const hamiltonData = getNPCData('hamilton');
@@ -468,7 +411,6 @@ export default class MainScene extends Phaser.Scene {
     this.hamilton = new NPC(this, hamiltonX, hamiltonY, 'hamilton_idle', hamiltonData);
     this.hamilton.setDepth(hamiltonData.depth);
     
-    // Make Hamilton stand idle initially
     this.hamilton.play('hamilton_idle');
 
     this.physics.add.collider(this.hamilton, this.groundPlatform);
@@ -486,46 +428,33 @@ export default class MainScene extends Phaser.Scene {
     this.physics.add.collider(this.piepsie, this.piepsiePlatform);
   }
 
-  /**
-   * Create collectible items in the world
-   */
   createCollectibles() {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
-    // Create dark green beer bottle near the tree
     const bottleX = 8980;
     const bottleY = groundY - 380;
     
-    // Create beer bottle using basic shapes
     this.beerBottle = this.add.container(bottleX, bottleY);
     
-    // Bottle body (dark green)
     const bottleBody = this.add.rectangle(0, 0, 12, 30, 0x2d5016);
     
-    // Bottle neck
     const bottleNeck = this.add.rectangle(0, -18, 6, 8, 0x2d5016);
     
-    // Bottle cap (gold)
     const bottleCap = this.add.rectangle(0, -23, 7, 3, 0xFFD700);
     
-    // Bottle highlight for glass effect
     const highlight = this.add.rectangle(-2, -5, 3, 15, 0x5a8c2d, 0.5);
     
-    // Add shimmer effect
     const shimmer = this.add.circle(0, -8, 3, 0xffffff, 0.3);
     
     this.beerBottle.add([bottleBody, bottleNeck, bottleCap, highlight, shimmer]);
     this.beerBottle.setDepth(900);
     this.beerBottle.setSize(12, 30);
     
-    // Add physics for overlap detection
     this.physics.add.existing(this.beerBottle);
     this.beerBottle.body.setAllowGravity(false);
     
-    // Track if bottle has been collected
     this.bottleCollected = false;
     
-    // Add bobbing animation
     this.tweens.add({
       targets: this.beerBottle,
       y: bottleY - 5,
@@ -535,7 +464,6 @@ export default class MainScene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
     
-    // Add label
     this.bottleLabel = this.add.text(bottleX, bottleY - 40, 'Beer Bottle', {
       fontSize: '12px',
       fill: '#ffffff',
@@ -545,12 +473,11 @@ export default class MainScene extends Phaser.Scene {
     this.bottleLabel.setOrigin(0.5);
     this.bottleLabel.setDepth(901);
 
-    // Create keys collectible near the car
     const keysX = 11520;
     const keysY = groundY - 500;
 
     this.keys = this.physics.add.sprite(keysX, keysY, 'keys');
-    this.keys.setOrigin(0.5, 1); // Sit on the ground
+    this.keys.setOrigin(0.5, 1);
     this.keys.setDepth(900);
     this.keys.setScale(0.08);
     this.keys.body.setAllowGravity(false);
@@ -566,31 +493,23 @@ export default class MainScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create the drivable car
-   */
   createCar() {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight + 50;
 
-    // Position the car somewhere on the ground – adjust X as desired
     const carX = 10400;
     const carY = groundY;
 
     this.car = this.physics.add.sprite(carX, carY, 'cars', 'car');
-    this.car.setOrigin(0.5, 1); // Align bottom of sprite with ground
+    this.car.setOrigin(0.5, 1);
     this.car.setDepth(850);
     this.car.setCollideWorldBounds(true);
     this.car.body.setImmovable(false);
 
-    // Collide car with ground
     this.physics.add.collider(this.car, this.groundPlatform);
 
     this.carPrompt = null;
   }
 
-  /**
-   * Create the player stats UI panel
-   */
   createStatsUI() {
     const padding = 15;
     const panelWidth = 200;
@@ -598,7 +517,6 @@ export default class MainScene extends Phaser.Scene {
     const panelX = GAME_CONFIG.width - panelWidth - padding;
     const panelY = padding;
     
-    // Create panel background
     this.statsPanel = this.add.graphics();
     this.statsPanel.fillStyle(0x000000, 0.7);
     this.statsPanel.fillRoundedRect(panelX, panelY, panelWidth, panelHeight, 8);
@@ -607,11 +525,10 @@ export default class MainScene extends Phaser.Scene {
     this.statsPanel.setScrollFactor(0);
     this.statsPanel.setDepth(2000);
     
-    // Title
     this.statsTitle = this.add.text(
       panelX + panelWidth / 2,
       panelY + 15,
-      'Player Stats',
+      'Pudding Stats',
       {
         fontSize: '16px',
         fill: '#FFD700',
@@ -622,7 +539,6 @@ export default class MainScene extends Phaser.Scene {
     this.statsTitle.setScrollFactor(0);
     this.statsTitle.setDepth(2001);
     
-    // Gold text
     this.goldText = this.add.text(
       panelX + 15,
       panelY + 40,
@@ -635,7 +551,6 @@ export default class MainScene extends Phaser.Scene {
     this.goldText.setScrollFactor(0);
     this.goldText.setDepth(2001);
     
-    // Experience text
     this.expText = this.add.text(
       panelX + 15,
       panelY + 60,
@@ -648,7 +563,6 @@ export default class MainScene extends Phaser.Scene {
     this.expText.setScrollFactor(0);
     this.expText.setDepth(2001);
     
-    // Items text
     this.itemsText = this.add.text(
       panelX + 15,
       panelY + 80,
@@ -663,18 +577,15 @@ export default class MainScene extends Phaser.Scene {
     this.itemsText.setDepth(2001);
   }
 
-  /**
-   * Update the stats UI display
-   */
   updateStatsUI(animateGold = false, animateExp = false, animateItems = false) {
     if (this.goldText) {
-      this.goldText.setText(`💰 Gold: ${this.playerStats.gold}`);
+      this.goldText.setText(`💰 Pudding Coins: ${this.playerStats.gold}`);
       if (animateGold) {
         this.flashText(this.goldText);
       }
     }
     if (this.expText) {
-      this.expText.setText(`⭐ XP: ${this.playerStats.experience}`);
+      this.expText.setText(`⭐ Pudding XP: ${this.playerStats.experience}`);
       if (animateExp) {
         this.flashText(this.expText);
       }
@@ -687,11 +598,7 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Flash animation for text
-   */
   flashText(textObject) {
-    // Scale up and change color briefly
     this.tweens.add({
       targets: textObject,
       scaleX: 1.2,
@@ -701,16 +608,12 @@ export default class MainScene extends Phaser.Scene {
       ease: 'Back.easeOut'
     });
     
-    // Color flash
     textObject.setColor('#00ff00');
     this.time.delayedCall(300, () => {
       textObject.setColor('#ffffff');
     });
   }
 
-  /**
-   * Check if player has reached the camp quest trigger zone
-   */
   checkCampQuestTrigger() {
     if (!this.player || this.campQuestTriggered || this.campQuestCompleted) return;
     
@@ -723,9 +626,6 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Check if player has reached the Lock Stock scene trigger zone
-   */
   checkLockStockTrigger() {
     if (!this.player || this.lockStockQuestCompleted || this.lockStockQuestTriggered) return;
     
@@ -733,16 +633,12 @@ export default class MainScene extends Phaser.Scene {
     const triggerRange = 50;
     const distance = Math.abs(this.player.x - triggerX);
     
-    // Show prompt when in range
     if (distance < triggerRange) {
       this.lockStockQuestTriggered = true;
       this.startLockStockScene();
     }
   }
 
-  /**
-   * Check if player has reached the Inhance scene trigger zone
-   */
   checkInhanceTrigger() {
     if (!this.player || this.inhanceQuestCompleted || this.inhanceQuestTriggered) return;
     
@@ -750,33 +646,26 @@ export default class MainScene extends Phaser.Scene {
     const triggerRange = 50;
     const distance = Math.abs(this.player.x - triggerX);
     
-    // Show prompt when in range
     if (distance < triggerRange) {
       this.inhanceQuestTriggered = true;
       this.startInhanceScene();
     }
   }
 
-  /**
-   * Check if player has reached the ending sequence trigger (x = 14300)
-   */
   checkEndingSequenceTrigger() {
     if (!this.player || this.endingSequenceTriggered || !this.inhanceQuestCompleted) return;
     
     const triggerX = 14300;
     const triggerRange = 50;
     
-    // Check player position (or car position if in car)
     const checkX = this.isInCar && this.car ? this.car.x : this.player.x;
     const distance = Math.abs(checkX - triggerX);
     
     if (distance < triggerRange) {
       this.endingSequenceTriggered = true;
       
-      // If in car, exit first
       if (this.isInCar) {
         this.exitCar();
-        // Wait a moment for exit animation, then start ending sequence
         this.time.delayedCall(500, () => {
           this.startEndingSequence();
         });
@@ -786,33 +675,24 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Start the ending sequence with final dialogues
-   */
   startEndingSequence() {
     if (this.endingSequenceActive) return;
     
     this.endingSequenceActive = true;
     
-    // Stop player movement and play idle animation
     if (this.player) {
       this.player.setVelocity(0, 0);
-      // Prevent player movement during ending sequence
       this.player.isDancing = true;
-      // Play idle animation based on last direction
       const playerDirection = 'left';
       this.player.play(`idle_${playerDirection}`, true);
     }
     
-    // Stop Luna's movement and play idle animation
     if (this.lunaGirl) {
       this.lunaGirl.setVelocity(0, 0);
-      // Determine Luna's facing direction based on player position
       const lunaDirection = this.player && this.player.x > this.lunaGirl.x ? 'right' : 'left';
       this.lunaGirl.play(`girl_idle_${lunaDirection}`, true);
     }
     
-    // Final dialogues from Luna
     const finalDialogues = [
       "Yay! We made it! Look how far we've come together.",
       "Thank you for everything, pudding.",
@@ -824,10 +704,8 @@ export default class MainScene extends Phaser.Scene {
       "Love you poopy pants. And happy birthday. 27 never looked so handsome. <3"
     ];
     
-    // Start the dialogue sequence
     this.dialogueManager.startDialogue("Jordan", finalDialogues);
     
-    // Monitor when dialogue completes
     this.endingDialogueCheck = this.time.addEvent({
       delay: 100,
       callback: () => {
@@ -854,16 +732,13 @@ export default class MainScene extends Phaser.Scene {
   }
 
   /**
-   * Play emote animations and fade out with "The End" banner
    */
   playEndingAnimations() {
     if (this.endingAnimationsStarted) return;
     this.endingAnimationsStarted = true;
     
-    // Play emote animations for both player and Luna
     if (this.player) {
       this.player.play('player_emote');
-      // Disable player movement completely
       this.player.isDancing = true;
     }
     
@@ -872,7 +747,6 @@ export default class MainScene extends Phaser.Scene {
       this.lunaGirl.setVelocity(0, 0);
     }
     
-    // Create "The End" banner matching title banner style
     const bannerY = GAME_CONFIG.height / 2 - 50;
     
     const endText = this.add.text(
@@ -900,7 +774,6 @@ export default class MainScene extends Phaser.Scene {
     endText.setDepth(3001);
     endText.setAlpha(0);
     
-    // Fade in animation
     this.tweens.add({
       targets: endText,
       alpha: 1,
@@ -908,7 +781,6 @@ export default class MainScene extends Phaser.Scene {
       ease: 'Power2'
     });
     
-    // Gentle floating animation
     this.tweens.add({
       targets: endText,
       y: '+=10',
@@ -918,36 +790,25 @@ export default class MainScene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
     
-    // Fade out the scene slowly
     this.cameras.main.fadeOut(6000, 0, 0, 0);
     
-    // Optional: Stop music with fade out
     if (this.musicManager) {
       this.musicManager.stop(6000);
     }
     
-    // When fade out completes, start Credits scene
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('CreditsScene');
     });
   }
 
-  /**
-   * Start the Lock Stock scene by switching to LockStockScene
-   */
   startLockStockScene() {
-    // Fade out main scene music
     this.musicManager.stop(1000);
     
-    // Fade out main scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
-    // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Pause main scene
       this.scene.pause('MainScene');
       
-      // Start Lock Stock scene
       this.scene.launch('LockStockScene');
       
       // Reset the camera fade for when we return
@@ -955,55 +816,34 @@ export default class MainScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Start the Inhance scene by switching to InhanceScene
-   */
   startInhanceScene() {
-    // Fade out main scene music
     this.musicManager.stop(1000);
     
-    // Fade out main scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
-    // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Pause main scene
       this.scene.pause('MainScene');
       
-      // Start Inhance scene
       this.scene.launch('InhanceScene');
       
-      // Reset the camera fade for when we return
       this.cameras.main.resetFX();
     });
   }
 
-  /**
-   * Start the camp quest by switching to CampScene
-   */
   startCampQuest() {
-    // Fade out main scene music
     this.musicManager.stop(1000);
     
-    // Fade out main scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
-    // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Pause main scene
       this.scene.pause('MainScene');
       
-      // Start camp scene
       this.scene.launch('CampScene');
       
-      // Reset the camera fade for when we return
       this.cameras.main.resetFX();
     });
   }
 
-  /**
-   * Check if player can collect the beer bottle
-   */
   checkBottleCollection() {
     if (!this.beerBottle || this.bottleCollected || !this.player) return;
     
@@ -1017,7 +857,6 @@ export default class MainScene extends Phaser.Scene {
     const collectionDistance = 50;
     
     if (distance < collectionDistance) {
-      // Show collection prompt
       if (!this.collectionPrompt) {
         this.collectionPrompt = this.add.text(
           this.beerBottle.x,
@@ -1034,12 +873,10 @@ export default class MainScene extends Phaser.Scene {
         this.collectionPrompt.setDepth(1001);
       }
       
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.collectBottle();
       }
     } else {
-      // Hide prompt if player walks away
       if (this.collectionPrompt) {
         this.collectionPrompt.destroy();
         this.collectionPrompt = null;
@@ -1047,13 +884,9 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Collect the beer bottle
-   */
   collectBottle() {
     this.bottleCollected = true;
     
-    // Destroy the bottle and its label
     if (this.beerBottle) {
       this.tweens.add({
         targets: this.beerBottle,
@@ -1077,7 +910,6 @@ export default class MainScene extends Phaser.Scene {
       this.collectionPrompt = null;
     }
     
-    // Show notification
     const notif = this.add.text(
       this.cameras.main.width / 2,
       50,
@@ -1093,7 +925,6 @@ export default class MainScene extends Phaser.Scene {
     notif.setScrollFactor(0);
     notif.setDepth(1001);
     
-    // Fade out notification
     this.tweens.add({
       targets: notif,
       alpha: 0,
@@ -1103,9 +934,6 @@ export default class MainScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Check if player can collect the car keys
-   */
   checkKeysCollection() {
     if (!this.keys || this.hasCarKeys || !this.player) return;
 
@@ -1119,7 +947,6 @@ export default class MainScene extends Phaser.Scene {
     const collectionDistance = 80;
 
     if (distance < collectionDistance) {
-      // Show collection prompt
       if (!this.keysPrompt) {
         this.keysPrompt = this.add.text(
           this.keys.x,
@@ -1136,12 +963,10 @@ export default class MainScene extends Phaser.Scene {
         this.keysPrompt.setDepth(1001);
       }
 
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.collectKeys();
       }
     } else {
-      // Hide prompt if player walks away
       if (this.keysPrompt) {
         this.keysPrompt.destroy();
         this.keysPrompt = null;
@@ -1149,13 +974,9 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Collect the car keys
-   */
   collectKeys() {
     this.hasCarKeys = true;
 
-    // Destroy the keys sprite with a small tween
     if (this.keys) {
       this.tweens.add({
         targets: this.keys,
@@ -1174,13 +995,11 @@ export default class MainScene extends Phaser.Scene {
       this.keysPrompt = null;
     }
 
-    // Optional: add keys to player inventory for UI
     if (this.playerStats && Array.isArray(this.playerStats.items)) {
       this.playerStats.items.push('Car Keys');
       this.updateStatsUI(false, false, true);
     }
 
-    // Show notification
     const notif = this.add.text(
       this.cameras.main.width / 2,
       80,
@@ -1205,13 +1024,9 @@ export default class MainScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Handle interaction with the car (entering / exiting)
-   */
   updateCarInteraction() {
     if (!this.car || !this.interactionKey) return;
 
-    // If already in the car, show "exit" prompt and handle exit
     if (this.isInCar) {
       const promptY = this.car.y - this.car.displayHeight - 10;
 
@@ -1241,7 +1056,6 @@ export default class MainScene extends Phaser.Scene {
       return;
     }
 
-    // Not in car – check if player is close enough to enter
     if (!this.player) return;
 
     const distance = Phaser.Math.Distance.Between(
@@ -1256,7 +1070,6 @@ export default class MainScene extends Phaser.Scene {
     if (distance < interactionDistance) {
       const promptY = this.car.y - this.car.displayHeight - 10;
 
-      // If player doesn't have keys yet, show requirement message instead
       const text = this.hasCarKeys ? 'Press E to get in car' : 'You need keys to drive this car';
 
       if (!this.carPrompt) {
@@ -1289,9 +1102,6 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Move the car when the player is inside
-   */
   updateCarMovement() {
     if (!this.car || !this.player || !this.player.cursors) return;
 
@@ -1307,9 +1117,6 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Enter the car: hide player and switch control to the car
-   */
   enterCar() {
     if (!this.car || !this.player || this.isInCar) return;
 
@@ -1339,15 +1146,11 @@ export default class MainScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.car, true, 0.1, 0.1);
   }
 
-  /**
-   * Exit the car: show player again and restore control
-   */
   exitCar() {
     if (!this.car || !this.player || !this.isInCar) return;
 
     this.isInCar = false;
 
-    // Place player next to the car
     const exitOffsetX = -40;
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     const exitY = groundY - 60; // Drop player in a bit above the ground so they don't get stuck
@@ -1359,18 +1162,15 @@ export default class MainScene extends Phaser.Scene {
       this.player.setVelocity(0, 0);
     }
 
-    // Stop the car when exiting
     this.car.setVelocity(0, 0);
 
-    // Remove prompt (it will be recreated as needed)
     if (this.carPrompt) {
       this.carPrompt.destroy();
       this.carPrompt = null;
     }
 
-    // Bring Luna back in behind the player if she was hidden for the car
     if (this.lunaGirl && this.lunaHiddenInCar) {
-      const followDistance = 60; // Match Luna's normal follow distance
+      const followDistance = 60;
       const lunaX = this.player.x - followDistance;
       const lunaY = this.player.y;
 
@@ -1384,17 +1184,12 @@ export default class MainScene extends Phaser.Scene {
       this.lunaHiddenInCar = false;
     }
 
-    // Switch camera back to follow the player
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
   }
 
-  /**
-   * Check if player is near any NPC and can interact
-   */
   checkNPCInteractions() {
     if (!this.player) return;
     
-    // Don't check interactions if dialogue is already active
     if (this.dialogueManager && this.dialogueManager.isDialogueActive()) {
       return;
     }
@@ -1403,7 +1198,6 @@ export default class MainScene extends Phaser.Scene {
     let nearestNPC = null;
     let nearestDistance = Infinity;
     
-    // Check all NPCs
     const npcs = [
       { npc: this.lunaGirl, skipCondition: this.lunaDialogCompleted },
       { npc: this.hamilton, skipCondition: false }
@@ -1425,7 +1219,6 @@ export default class MainScene extends Phaser.Scene {
       }
     }
     
-    // Show interaction prompt for nearest NPC
     if (nearestNPC) {
       if (!this.interactionPrompt || this.currentInteractionNPC !== nearestNPC) {
         this.hideInteractionPrompt();
@@ -1433,12 +1226,10 @@ export default class MainScene extends Phaser.Scene {
         this.currentInteractionNPC = nearestNPC;
       }
       
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.handleNPCInteraction(nearestNPC);
       }
     } else {
-      // Hide prompt if player walks away
       if (this.interactionPrompt) {
         this.hideInteractionPrompt();
         this.currentInteractionNPC = null;
@@ -1446,27 +1237,19 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Handle interaction with an NPC
-   */
   handleNPCInteraction(npc) {
     const interaction = npc.interact();
     
-    // Stop NPC movement during dialogue
     npc.setVelocityX(0);
     
-    // Special handling for Hamilton's quest
     if (npc === this.hamilton) {
       if (this.hamiltonQuestCompleted) {
-        // Quest already completed
         this.dialogueManager.startDialogue("Hamilton", ["Dankie vir die dop! You're a legend!"]);
         return;
       } else if (this.bottleCollected && !this.hamiltonQuestCompleted) {
-        // Player has the bottle, complete the quest
         this.completeHamiltonQuest();
         return;
       } else if (!this.bottleCollected && !this.hamiltonQuestActive) {
-        // Start the quest
         this.startHamiltonQuest(interaction);
         return;
       }
@@ -1482,52 +1265,40 @@ export default class MainScene extends Phaser.Scene {
         delay: 100,
         callback: () => {
           if (!this.dialogueManager.isDialogueActive() && npc && !this.lunaDialogCompleted) {
-            // Mark dialog as completed
             if (npc === this.lunaGirl) {
               this.lunaDialogCompleted = true;
               this.updateLunaFollowBehavior();
             }
           }
         },
-        repeat: 600 // Check for 60 seconds
+        repeat: 600
       });
     });
   }
 
-  /**
-   * Start Hamilton's quest
-   */
   startHamiltonQuest(interaction) {
     this.hamiltonQuestActive = true;
     
-    // Show quest dialogue
     this.dialogueManager.startDialogue(interaction.name, interaction.dialogues);
     
-    // Accept the quest
     const quest = interaction.quest;
     if (quest && this.questManager) {
       this.questManager.acceptQuest(quest);
     }
   }
 
-  /**
-   * Complete Hamilton's quest
-   */
   completeHamiltonQuest() {
     this.hamiltonQuestCompleted = true;
     
-    // Show completion dialogue
     this.dialogueManager.startDialogue("Hamilton", [
       "Ag, you found my dop! Dankie dankie!",
       "You're a real boet. Here, take this as a reward!"
     ]);
     
-    // Complete the quest in the quest manager
     if (this.questManager) {
       this.questManager.completeQuest('fetch_dop');
     }
     
-    // Show a special completion effect
     this.time.delayedCall(1000, () => {
       const reward = this.add.text(
         this.cameras.main.width / 2,
@@ -1545,7 +1316,6 @@ export default class MainScene extends Phaser.Scene {
       reward.setScrollFactor(0);
       reward.setDepth(1002);
       
-      // Fade in and out
       reward.setAlpha(0);
       this.tweens.add({
         targets: reward,
@@ -1570,26 +1340,20 @@ export default class MainScene extends Phaser.Scene {
   updatePiepsieAnimation() {
     if (!this.piepsie || !this.player) return;
     
-    // Calculate horizontal distance to player
     const distanceX = Math.abs(this.player.x - this.piepsie.x);
     const proximityRange = 200;
     
     if (distanceX < proximityRange) {
-      // Player is close - play happy animation
       if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail-happy') {
         this.piepsie.play('piepsie-tail-happy');
       }
     } else {
-      // Player is far - play normal tail animation
       if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail') {
         this.piepsie.play('piepsie-tail');
       }
     }
   }
 
-  /**
-   * Update Luna's following behavior
-   */
   updateLunaFollowBehavior() {
     if (!this.lunaGirl || !this.player || this.lunaGirl.isClimbing) return;
 
@@ -1601,7 +1365,6 @@ export default class MainScene extends Phaser.Scene {
       return;
     }
     
-    // Calculate distance to player
     const distance = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
@@ -1609,11 +1372,10 @@ export default class MainScene extends Phaser.Scene {
       this.player.y
     );
     
-    const followDistance = 60; // Stay this far from player
-    const runDistance = 120; // Start running if further than this
+    const followDistance = 60;
+    const runDistance = 120;
     
     if (distance > followDistance) {
-      // Calculate direction to player
       const angle = Phaser.Math.Angle.Between(
         this.lunaGirl.x,
         this.lunaGirl.y,
@@ -1621,19 +1383,15 @@ export default class MainScene extends Phaser.Scene {
         this.player.y
       );
       
-      // Determine speed based on distance
       const speed = distance > runDistance ? 140 : 80;
       
-      // Move towards player
       this.lunaGirl.setVelocity(
         Math.cos(angle) * speed,
-        0 // Keep Y velocity at 0 since we have gravity
+        0
       );
       
-      // Check if Luna is near any obstacles
       let nearObstacle = false;
       
-      // Check if Luna needs to jump over the rock
       if (this.rockObstacle) {
         const distanceToRock = Phaser.Math.Distance.Between(
           this.lunaGirl.x,
@@ -1642,7 +1400,6 @@ export default class MainScene extends Phaser.Scene {
           this.rockObstacle.y
         );
         
-        // Show NPC popup dialogue if near rock and player is on the other side
         if (distanceToRock < 100 && this.lunaGirl.body.touching.down) {
           if (!this.npcPopupDialogue) {
             this.showNPCPopupDialogue(this.lunaGirl, "Ek is a klein meisie so I don't need to jump over the rock.");
@@ -1667,12 +1424,10 @@ export default class MainScene extends Phaser.Scene {
         }
       }
       
-      // Only hide popup if not near any obstacle
       if (!nearObstacle) {
         this.hideNPCPopupDialogue();
       }
       
-      // Update animation based on direction
       const velocityX = this.lunaGirl.body.velocity.x;
       
       if (Math.abs(velocityX) > 5) {
@@ -1685,21 +1440,15 @@ export default class MainScene extends Phaser.Scene {
         }
       }
     } else {
-      // Close enough - stop and idle
       this.lunaGirl.setVelocityX(0);
       
-      // Play idle animation if not already
       if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
-        // Determine direction based on player position
         const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
         this.lunaGirl.play(`girl_idle_${direction}`);
       }
     }
   }
 
-  /**
-   * Show interaction prompt above NPC
-   */
   showInteractionPrompt(npc) {
     if (this.interactionPrompt) return;
     
@@ -1726,9 +1475,6 @@ export default class MainScene extends Phaser.Scene {
     this.events.on('update', this.interactionPromptUpdate);
   }
 
-    /**
-   * Show interaction prompt above NPC
-   */
     showNPCPopupDialogue(npc, message) {
       if (this.npcPopupDialogue) return;
       
@@ -1746,7 +1492,6 @@ export default class MainScene extends Phaser.Scene {
       this.npcPopupDialogue.setOrigin(0.5);
       this.npcPopupDialogue.setDepth(1000);
       
-      // Make it follow the NPC
       this.npcPopupDialogueUpdate = () => {
         if (this.npcPopupDialogue && npc) {
           this.npcPopupDialogue.setPosition(npc.x, npc.y - 60);
@@ -1755,9 +1500,6 @@ export default class MainScene extends Phaser.Scene {
       this.events.on('update', this.npcPopupDialogueUpdate);
     }
 
-  /**
-   * Hide interaction prompt
-   */
   hideInteractionPrompt() {
     if (this.interactionPrompt) {
       this.interactionPrompt.destroy();
@@ -1769,9 +1511,6 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-  * Hide NPC popup dialogue
-  */
   hideNPCPopupDialogue() {
     if (this.npcPopupDialogue) {
       this.npcPopupDialogue.destroy();
@@ -1783,9 +1522,6 @@ export default class MainScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Show welcome dialog when entering the game
-   */
   showWelcomeDialog() {
     this.dialogueManager.startDialogue(
       'Narrator',
@@ -1793,9 +1529,6 @@ export default class MainScene extends Phaser.Scene {
     );
   }
 
-  /**
-   * Create obstacle course after Luna dialog is completed
-   */
   createObstacles() {
     const groundY = WORLD_CONFIG.height - WORLD_CONFIG.groundHeight;
     
@@ -1916,7 +1649,6 @@ export default class MainScene extends Phaser.Scene {
     
     rock.add([shadow2, boulder2, highlight12, highlight22]);
     
-    // Add physics to rock (static body - won't fall)
     this.physics.add.existing(rock, true);
     rock.body.setSize(80, 80);
     rock.setDepth(900);
@@ -1935,10 +1667,9 @@ export default class MainScene extends Phaser.Scene {
     
     rock.add([shadow, boulder, highlight1, highlight2]);
     
-    // Add physics to rock (static body - won't fall)
     this.physics.add.existing(rock, true);
     rock.body.setSize(80 * scale, 80 * scale);
-    rock.body.setOffset(-30 * scale, -10 * scale); // Center the collision box
+    rock.body.setOffset(-30 * scale, -10 * scale);
     rock.setDepth(900);
     rock.setScale(scale);
     
@@ -2041,7 +1772,6 @@ export default class MainScene extends Phaser.Scene {
     if (this.playerIsDead) return;
     this.playerIsDead = true;
     
-    // Stop player movement
     this.player.setVelocity(0, 0);
     this.player.setTint(0xff0000); // Red tint for death effect
     
@@ -2055,7 +1785,6 @@ export default class MainScene extends Phaser.Scene {
       ease: 'Power2'
     });
     
-    // Show death message
     const deathText = this.add.text(
       this.cameras.main.width / 2,
       this.cameras.main.height / 2,
@@ -2073,7 +1802,6 @@ export default class MainScene extends Phaser.Scene {
     deathText.setDepth(3000);
     deathText.setAlpha(0);
     
-    // Fade in death text
     this.tweens.add({
       targets: deathText,
       alpha: 1,
@@ -2082,7 +1810,6 @@ export default class MainScene extends Phaser.Scene {
     
     // Respawn after delay
     this.time.delayedCall(2000, () => {
-      // Fade out death text
       this.tweens.add({
         targets: deathText,
         alpha: 0,
@@ -2090,17 +1817,14 @@ export default class MainScene extends Phaser.Scene {
         onComplete: () => deathText.destroy()
       });
       
-      // Respawn player at safe location
       this.player.setPosition(x, y);
       this.player.setVelocity(0, 0);
       this.player.clearTint();
       this.player.setAlpha(1);
       this.player.setAngle(0);
       
-      // Reset death flag
       this.playerIsDead = false;
       
-      // Optional: Flash effect on respawn
       this.tweens.add({
         targets: this.player,
         alpha: 0.3,
