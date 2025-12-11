@@ -1,7 +1,3 @@
-/**
- * IntroScene
- */
-
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
 
@@ -24,34 +20,22 @@ export default class IntroScene extends Phaser.Scene {
     
     this.createTitle();
     
-    // Add "Click to Start" text that appears after a delay
     this.time.delayedCall(2000, () => {
       this.createStartPrompt();
     });
     
-    // Click/tap to continue
     this.input.once('pointerdown', () => {
       this.startGame();
     });
     
-    // Auto-start after 5 seconds if no interaction
     this.time.delayedCall(20000, () => {
       this.startGame();
     });
   }
 
-  /**
-   * Create a beautiful gradient sky background
-   */
   createSkyGradient() {
     const { width, height } = this.cameras.main;
     const graphics = this.add.graphics();
-    
-    // Create gradient from top to bottom
-    // Top: Deep blue (#2c5f8d)
-    // Middle-top: Sky blue (#4a90e2)
-    // Middle-bottom: Light blue (#87CEEB)
-    // Bottom: Peachy orange (#ffd4a3)
     
     const gradientSteps = 50;
     const stepHeight = height / gradientSteps;
@@ -61,13 +45,10 @@ export default class IntroScene extends Phaser.Scene {
       let color;
       
       if (ratio < 0.3) {
-        // Top part: dark to medium blue
         color = this.interpolateColor(0x2c5f8d, 0x4a90e2, ratio / 0.3);
       } else if (ratio < 0.7) {
-        // Middle part: medium to light blue
         color = this.interpolateColor(0x4a90e2, 0x87CEEB, (ratio - 0.3) / 0.4);
       } else {
-        // Bottom part: light blue to peachy orange
         color = this.interpolateColor(0x87CEEB, 0xffd4a3, (ratio - 0.7) / 0.3);
       }
       
@@ -76,17 +57,12 @@ export default class IntroScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Create a sun in the sky
-   */
   createSun() {
     const { width, height } = this.cameras.main;
     const sun = this.add.circle(width * 0.75, height * 0.25, 60, 0xffeb3b, 0.8);
     
-    // Add glow effect
     const glow = this.add.circle(width * 0.75, height * 0.25, 80, 0xfff176, 0.3);
     
-    // Subtle pulsing animation
     this.tweens.add({
       targets: [sun, glow],
       scale: { from: 1, to: 1.1 },
@@ -98,25 +74,17 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create simple cloud shapes
-   */
   createClouds() {
     const { width, height } = this.cameras.main;
     
-    // Create several clouds at different positions
     this.createCloud(width * 0.2, height * 0.2, 1);
     this.createCloud(width * 0.5, height * 0.15, 0.8);
     this.createCloud(width * 0.8, height * 0.25, 1.2);
   }
 
-  /**
-   * Create a single cloud made of circles
-   */
   createCloud(x, y, scale = 1) {
     const cloud = this.add.container(x, y);
     
-    // Cloud made of overlapping circles
     const circles = [
       { x: 0, y: 0, r: 25 },
       { x: 30, y: -5, r: 30 },
@@ -130,7 +98,6 @@ export default class IntroScene extends Phaser.Scene {
       cloud.add(circle);
     });
     
-    // Slow drift animation
     this.tweens.add({
       targets: cloud,
       x: x + 100,
@@ -140,7 +107,6 @@ export default class IntroScene extends Phaser.Scene {
       ease: 'Sine.easeInOut'
     });
     
-    // Subtle bob up and down
     this.tweens.add({
       targets: cloud,
       y: y + 10,
@@ -151,11 +117,7 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create animated birds flying across the sky
-   */
   createBirds() {
-    // Create several birds at different heights and positions
     for (let i = 0; i < 6; i++) {
       this.time.delayedCall(i * 800, () => {
         this.createBird();
@@ -163,9 +125,6 @@ export default class IntroScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Create a single bird with animation
-   */
   createBird() {
     const { width, height } = this.cameras.main;
     const startX = -50;
@@ -234,13 +193,9 @@ export default class IntroScene extends Phaser.Scene {
     rightWing.strokePath();
   }
 
-  /**
-   * Create the game title with fade-in animation
-   */
   createTitle() {
     const { width, height } = this.cameras.main;
     
-    // Main title
     const title = this.add.text(width / 2, height / 2 - 50, 'JoJo\'s Adventure', {
       fontSize: '72px',
       fontFamily: 'Arial, sans-serif',
@@ -259,25 +214,6 @@ export default class IntroScene extends Phaser.Scene {
     title.setOrigin(0.5);
     title.setAlpha(0);
     
-    // Subtitle
-    const subtitle = this.add.text(width / 2, height / 2 + 30, 'A Sandbox Game', {
-      fontSize: '28px',
-      fontFamily: 'Arial, sans-serif',
-      fill: '#ffffff',
-      stroke: '#4a90e2',
-      strokeThickness: 4,
-      shadow: {
-        offsetX: 2,
-        offsetY: 2,
-        color: '#000000',
-        blur: 5,
-        fill: true
-      }
-    });
-    subtitle.setOrigin(0.5);
-    subtitle.setAlpha(0);
-    
-    // Fade in animations
     this.tweens.add({
       targets: title,
       alpha: 1,
@@ -286,16 +222,7 @@ export default class IntroScene extends Phaser.Scene {
     });
     
     this.tweens.add({
-      targets: subtitle,
-      alpha: 1,
-      duration: 1500,
-      delay: 500,
-      ease: 'Power2'
-    });
-    
-    // Gentle floating animation
-    this.tweens.add({
-      targets: [title, subtitle],
+      targets: title,
       y: '+=10',
       duration: 2000,
       yoyo: true,
@@ -304,9 +231,6 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create "Click to Start" prompt
-   */
   createStartPrompt() {
     const { width, height } = this.cameras.main;
     
@@ -320,7 +244,6 @@ export default class IntroScene extends Phaser.Scene {
     prompt.setOrigin(0.5);
     prompt.setAlpha(0);
     
-    // Fade in and pulse
     this.tweens.add({
       targets: prompt,
       alpha: 1,
@@ -338,11 +261,7 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Transition to the preload scene
-   */
   startGame() {
-    // Fade out
     this.cameras.main.fadeOut(500, 0, 0, 0);
     
     this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -350,9 +269,6 @@ export default class IntroScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Helper function to interpolate between two hex colors
-   */
   interpolateColor(color1, color2, ratio) {
     const r1 = (color1 >> 16) & 0xff;
     const g1 = (color1 >> 8) & 0xff;

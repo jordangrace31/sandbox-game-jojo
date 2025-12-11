@@ -1,8 +1,3 @@
-/**
- * LockStockScene
- * A street scene with a building featuring the Lock Stock logo
- */
-
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
@@ -18,80 +13,61 @@ export default class LockStockScene extends Phaser.Scene {
   }
 
   create() {
-    // Set world bounds (smaller scene)
     this.sceneWidth = 1400;
     this.sceneHeight = 700;
     this.physics.world.setBounds(0, 0, this.sceneWidth, this.sceneHeight);
     
-    // Initialize systems
     this.animationManager = new AnimationManager(this);
     this.dialogueManager = new DialogueManager(this);
     this.musicManager = new MusicManager(this);
     
-    // Start lock stock music with fade in (only if not already playing)
     if (!this.musicManager.isPlaying() || this.musicManager.getCurrentTrack() !== 'lock_stock') {
       this.musicManager.play('lock_stock', 0.4, true, 1500);
     }
     
-    // Door position for interaction
     this.doorPosition = { x: 1100, y: 400 };
     this.doorPrompt = null;
     
-    // Create the world
     this.createSky();
     this.createStreet();
     this.createSidewalk();
     this.createObstacles();
     this.createBuilding();
     
-    // Create NPCs
     this.createNPCs();
     
-    // Create the player (spawned from above to fall onto sidewalk)
     this.player = new Player(this, 200, 200);
     this.player.setDepth(1000);
     
-    // Set up camera
     this.cameras.main.setBounds(0, 0, this.sceneWidth, this.sceneHeight);
     
-    // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
     
-    // Add collisions with obstacles
     if (this.obstacles) {
       this.obstacles.forEach(obstacle => {
         this.physics.add.collider(this.player, obstacle);
       });
     }
     
-    // Set up interaction key
     this.interactionKey = this.input.keyboard.addKey('E');
     
-    // Set up exit key
     this.exitKey = this.input.keyboard.addKey('Q');
     
-    // Add exit prompt
     this.createExitPrompt();
     
-    // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
     
-    // Show Luna's welcome dialogue after fade-in completes
     this.cameras.main.once('camerafadeincomplete', () => {
       if (this.lunaGirl && this.dialogueManager) {
         this.dialogueManager.startDialogue('Jordan', 'Sorry, you may need to be patient with me. I just had a leg day so I\'m learning how to run and jump again, but I\'m trying my best to follow, I promise');
       }
     });
     
-    // Set up scene resume event (when returning from ClubScene)
     this.events.on('resume', () => {
-      // Music continues playing - no need to restart it
-      // Just ensure the scene is ready
       if (this.cameras.main) {
         this.cameras.main.resetFX();
       }
       
-      // Reset luna's jump timer if returning from club
       if (this.lunaGirl) {
         this.lunaLastJumpTime = 0;
       }
@@ -99,43 +75,31 @@ export default class LockStockScene extends Phaser.Scene {
   }
 
   update() {
-    // Update player
     this.player.update();
     
-    // Update NPCs
     if (this.lunaGirl) {
       this.lunaGirl.update();
       
-      // Make Luna follow player
       if (this.lunaFollowEnabled) {
         this.updateLunaFollowBehavior();
       }
     }
     
-    // Update dialogue manager
     if (this.dialogueManager) {
       this.dialogueManager.update();
     }
     
-    // Check for exit
     this.checkExit();
     
-    // Check for club door interaction
     this.checkDoorInteraction();
   }
 
-  /**
-   * Check if player wants to exit the scene
-   */
   checkExit() {
     if (Phaser.Input.Keyboard.JustDown(this.exitKey)) {
       this.returnToMainScene();
     }
   }
 
-  /**
-   * Check if player is near the club door
-   */
   checkDoorInteraction() {
     if (!this.player || !this.doorPosition) return;
     
@@ -149,24 +113,18 @@ export default class LockStockScene extends Phaser.Scene {
     const interactionDistance = 80;
     
     if (distance < interactionDistance) {
-      // Show prompt
       if (!this.doorPrompt) {
         this.showDoorPrompt();
       }
       
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.enterClub();
       }
     } else {
-      // Hide prompt if player walks away
       this.hideDoorPrompt();
     }
   }
 
-  /**
-   * Show door interaction prompt
-   */
   showDoorPrompt() {
     if (this.doorPrompt) return;
     
@@ -185,9 +143,6 @@ export default class LockStockScene extends Phaser.Scene {
     this.doorPrompt.setDepth(2001);
   }
 
-  /**
-   * Hide door prompt
-   */
   hideDoorPrompt() {
     if (this.doorPrompt) {
       this.doorPrompt.destroy();
@@ -195,11 +150,7 @@ export default class LockStockScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Enter the club interior
-   */
   enterClub() {
-    // Fade out
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
     // Wait for fade out to complete before switching scenes
@@ -214,42 +165,29 @@ export default class LockStockScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Return to the main scene
-   */
   returnToMainScene() {
-    // Stop the Lock Stock music when leaving for MainScene
     if (this.musicManager) {
       this.musicManager.stop(1000);
     }
     
-    // Fade out
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
     // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Get main scene
       const mainScene = this.scene.get('MainScene');
       
-      // Stop this scene and resume MainScene
       this.scene.stop('LockStockScene');
       this.scene.resume('MainScene');
       
-      // Fade back in to MainScene (music will restart via resume event)
       if (mainScene) {
         mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
       }
     });
   }
 
-  /**
-   * Update Luna's following behavior
-   */
   updateLunaFollowBehavior() {
     if (!this.lunaGirl || !this.player) return;
     
-    // Define jump trigger points based on obstacle positions
-    // These are the X positions where Luna needs to jump (same as where player needs to jump)
     const jumpTriggers = [
       { x: 325, range: 20, type: 'onto' },     // Before crate at 400
       { x: 510, range: 20, type: 'onto' },     // Before platform at 700
@@ -258,7 +196,6 @@ export default class LockStockScene extends Phaser.Scene {
       { x: 1030, range: 20, type: 'onto' }     // Before platform at 1050
     ];
     
-    // Calculate distance to player
     const distance = Phaser.Math.Distance.Between(
       this.player.x,
       this.player.y,
@@ -266,57 +203,45 @@ export default class LockStockScene extends Phaser.Scene {
       this.player.y
     );
     
-    const followDistance = 80; // Stay this far from player
-    const runDistance = 200; // Start running if further than this
-    const jumpCooldown = 50; // Minimum time between jumps (ms)
+    const followDistance = 80;
+    const jumpCooldown = 50;
     
     if (distance > followDistance) {
-      // Calculate direction to player
       const velocityX = this.player.x > this.lunaGirl.x ? 1 : -1;
       
-      // Determine speed based on distance
       const speed = 150;
       
-      // Move towards player (only X axis to stay on sidewalk)
       this.lunaGirl.setVelocityX(velocityX * speed);
       
-      // Check if Luna should jump at any trigger point
       const currentTime = this.time.now;
       const timeSinceLastJump = currentTime - this.lunaLastJumpTime;
       
       if (timeSinceLastJump > jumpCooldown && this.lunaGirl.body.touching.down) {
-        // Check each jump trigger
         for (const trigger of jumpTriggers) {
-          // Check if Luna is approaching this trigger point (within range)
           const distanceToTrigger = Math.abs(this.lunaGirl.x - trigger.x);
           const isApproaching = velocityX > 0 ? 
             (this.lunaGirl.x < trigger.x && this.lunaGirl.x > trigger.x - 30) :
             (this.lunaGirl.x > trigger.x && this.lunaGirl.x < trigger.x + 30);
           
           if (distanceToTrigger < trigger.range && isApproaching) {
-            // Make Luna jump!
             this.lunaGirl.setVelocityY(-500);
             this.lunaLastJumpTime = currentTime;
-            break; // Only trigger one jump at a time
+            break;
           }
         }
       }
       
-      // Update animation based on direction and speed
       const absVelocityX = Math.abs(this.lunaGirl.body.velocity.x);
       
       if (absVelocityX > 5) {
         const direction = velocityX > 0 ? 'right' : 'left';
         
-        // Check if jumping (not touching ground)
         if (!this.lunaGirl.body.touching.down) {
-          // Use girl jump animation
           const jumpAnimKey = `girl_jump_${direction}`;
           if (this.lunaGirl.anims.currentAnim?.key !== jumpAnimKey) {
             this.lunaGirl.play(jumpAnimKey);
           }
         } else {
-          // Normal walk/run animation when on ground
           const animKey = 'girl_walk';
           const fullAnimKey = `${animKey}_${direction}`;
           
@@ -326,21 +251,15 @@ export default class LockStockScene extends Phaser.Scene {
         }
       }
     } else {
-      // Stop moving when close enough
       this.lunaGirl.setVelocityX(0);
       
-      // Play idle animation if not already
       if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
-        // Determine direction based on player position
         const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
         this.lunaGirl.play(`girl_idle_${direction}`);
       }
     }
   }
 
-  /**
-   * Create exit prompt
-   */
   createExitPrompt() {
     this.exitPrompt = this.add.text(
       GAME_CONFIG.width / 2,
@@ -358,9 +277,6 @@ export default class LockStockScene extends Phaser.Scene {
     this.exitPrompt.setDepth(2000);
   }
 
-  /**
-   * Create a daytime sky background
-   */
   createSky() {
     const gradient = this.add.graphics();
     
@@ -649,47 +565,35 @@ export default class LockStockScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create obstacles that player must navigate
-   */
   createObstacles() {
     this.obstacles = [];
     const sidewalkY = GAME_CONFIG.height - 140;
     
-    // Obstacle 1: Wooden crates (low, can jump over)
     const crate1 = this.createCrate(400, sidewalkY - 25, 50, 50);
     this.obstacles.push(crate1);
     
-    // Obstacle 2: Stack of two crates (medium height)
     const crateStack = this.createCrateStack(450, sidewalkY - 40, 50, 40);
     this.obstacles.push(crateStack);
     
-    // Obstacle 3: Raised platform (must jump onto)
     const platform1 = this.createPlatform(650, sidewalkY - 100, 180, 20);
     this.obstacles.push(platform1);
     
-    // Obstacle 4: Trash can
     const trashCan = this.createTrashCan(850, sidewalkY - 40);
     this.obstacles.push(trashCan);
     
-    // Obstacle 5: Another platform (higher)
     const platform2 = this.createPlatform(950, sidewalkY - 150, 100, 20);
     this.obstacles.push(platform2);
   }
 
-  /**
-   * Create a wooden crate obstacle
-   */
   createCrate(x, y, width, height) {
     const crate = this.add.rectangle(x, y, width, height, 0x8B4513);
     crate.setStrokeStyle(3, 0x654321);
-    this.physics.add.existing(crate, true); // Static body
+    this.physics.add.existing(crate, true);
     
     // Add wood grain details
     const grain = this.add.graphics();
     grain.lineStyle(2, 0x654321, 0.5);
     
-    // Vertical lines
     for (let i = 0; i < 3; i++) {
       const offsetX = x - width / 2 + (width / 3) * i;
       grain.beginPath();
@@ -698,7 +602,6 @@ export default class LockStockScene extends Phaser.Scene {
       grain.strokePath();
     }
     
-    // Horizontal lines
     for (let i = 0; i < 3; i++) {
       const offsetY = y - height / 2 + (height / 3) * i;
       grain.beginPath();
@@ -710,11 +613,7 @@ export default class LockStockScene extends Phaser.Scene {
     return crate;
   }
 
-  /**
-   * Create a stack of crates
-   */
   createCrateStack(x, y, width, height) {
-    // Create container for the stack
     const stack = this.add.rectangle(x, y, width, height * 2, 0x8B4513);
     stack.setStrokeStyle(3, 0x654321);
     this.physics.add.existing(stack, true);
@@ -726,15 +625,11 @@ export default class LockStockScene extends Phaser.Scene {
     return stack;
   }
 
-  /**
-   * Create a platform
-   */
   createPlatform(x, y, width, height) {
     const platform = this.add.rectangle(x, y, width, height, 0x808080);
     platform.setStrokeStyle(2, 0x606060);
     this.physics.add.existing(platform, true);
     
-    // Add platform texture
     const texture = this.add.graphics();
     texture.lineStyle(1, 0x606060, 0.5);
     
@@ -749,57 +644,41 @@ export default class LockStockScene extends Phaser.Scene {
     return platform;
   }
 
-  /**
-   * Create a trash can obstacle
-   */
   createTrashCan(x, y) {
     const canWidth = 40;
     const canHeight = 60;
     
-    // Trash can body
     const can = this.add.rectangle(x, y, canWidth, canHeight, 0x404040);
     can.setStrokeStyle(2, 0x202020);
     this.physics.add.existing(can, true);
     
-    // Lid
     const lid = this.add.ellipse(x, y - canHeight / 2 - 5, canWidth + 10, 15, 0x505050);
     lid.setStrokeStyle(2, 0x303030);
     
     return can;
   }
 
-  /**
-   * Create an elevated building platform with detailed styling
-   */
-  /**
-   * Create NPCs in the LockStock scene
-   */
   createNPCs() {
     const lunaData = getNPCData('jojoGirl');
     
-    // Position lunaGirl near the player at spawn
     const lunaX = 250;
     const lunaY = 200;
     
     this.lunaGirl = new NPC(this, lunaX, lunaY, 'jojo_girl_idle', lunaData);
     this.lunaGirl.setDepth(lunaData.depth);
     
-    // Make Luna stand idle facing right
     this.lunaGirl.play('girl_idle_right');
     
-    // Add collision with ground and obstacles
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
     
-    // Add collisions with obstacles so Luna can land on platforms
     if (this.obstacles) {
       this.obstacles.forEach(obstacle => {
         this.physics.add.collider(this.lunaGirl, obstacle);
       });
     }
     
-    // Luna following state
     this.lunaFollowEnabled = true;
-    this.lunaLastJumpTime = 0; // Track when Luna last jumped
+    this.lunaLastJumpTime = 0;
   }
 
   createBuildingPlatform(x, y, width, height) {

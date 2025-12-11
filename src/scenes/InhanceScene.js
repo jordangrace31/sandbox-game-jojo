@@ -1,8 +1,3 @@
-/**
- * InhanceScene
- * An office scene with the Inhance branding
- */
-
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
@@ -18,39 +13,30 @@ export default class InhanceScene extends Phaser.Scene {
   }
 
   create() {
-    // Set world bounds (office scene)
     const sceneWidth = 1400;
     const sceneHeight = 700;
     this.physics.world.setBounds(0, 0, sceneWidth, sceneHeight);
     
-    // Initialize systems
     this.animationManager = new AnimationManager(this);
     this.dialogueManager = new DialogueManager(this);
     this.musicManager = new MusicManager(this);
     
-    // Start office music (using lock_stock as placeholder)
     this.musicManager.play('shell', 0.3, true, 1500);
     
-    // Create the office environment
     this.createOfficeBackground();
     this.createFloor();
     this.createInhanceLogo();
     this.createOfficeDecorations();
     
-    // Create the player
     this.player = new Player(this, 250, 550);
     this.player.setDepth(1000);
     
-    // Create Luna NPC
     this.createLuna();
     
-    // Create NPCs
     this.createNPCs();
     
-    // Set up camera
     this.cameras.main.setBounds(0, 0, sceneWidth, sceneHeight);
     
-    // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
     this.physics.add.collider(this.lunaGirl, this.groundPlatform);
     if (this.npcs) {
@@ -59,13 +45,10 @@ export default class InhanceScene extends Phaser.Scene {
       });
     }
     
-    // Set up interaction key for exit
     this.interactionKey = this.input.keyboard.addKey('E');
     
-    // Create exit door
     this.createExitDoor();
     
-    // Quest tracking
     this.hasSpokenToTom = false;
     this.codingQuestCompleted = false;
     this.computerViewActive = false;
@@ -74,67 +57,51 @@ export default class InhanceScene extends Phaser.Scene {
     this.tomPostQuestDialogueActive = false;
     this.tomFadedOut = false;
     
-    // Store first desk position for computer interaction
     this.playerDeskPosition = { x: 250, y: GAME_CONFIG.height - 140 };
     
-    // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
   }
 
   update() {
-    // Handle dev tools input if computer view is active
     if (this.computerViewActive) {
       this.updateDevTools();
       return;
     }
     
-    // Update player
     this.player.update();
     
-    // Update Luna
     if (this.lunaGirl) {
       this.lunaGirl.update();
       
-      // Make Luna follow player if enabled and not in computer view
       if (this.lunaFollowEnabled && !this.computerViewActive) {
         this.updateLunaFollowBehavior();
       }
     }
     
-    // Update NPCs
     if (this.npcs) {
       this.npcs.forEach(npc => npc.update());
     }
     
-    // Update dialogue manager
     if (this.dialogueManager) {
       const wasDialogueActive = this.dialogueManager.isActive;
       this.dialogueManager.update();
       
-      // Check if Tom's post-quest dialogue just completed
       if (this.tomPostQuestDialogueActive && wasDialogueActive && !this.dialogueManager.isActive) {
         this.tomPostQuestDialogueActive = false;
         this.fadeOutTom();
       }
     }
     
-    // Check for NPC interactions
     this.checkNPCInteractions();
     
-    // Check for computer interaction (only after talking to Tom)
     this.checkComputerInteraction();
     
-    // Check for exit door interaction
     this.checkExitDoorInteraction();
   }
 
-  /**
-   * Create office background with professional colors
-   */
   createOfficeBackground() {
     const gradient = this.add.graphics();
     
-    // Create a clean office wall gradient (light gray to slightly darker)
     const strips = 50;
     const stripHeight = GAME_CONFIG.height / strips;
     
@@ -184,57 +151,30 @@ export default class InhanceScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Create Inhance logo at the top of the scene
-   */
   createInhanceLogo() {
     const logoX = 700;
     const logoY = 150;
     
-    // Add the Inhance logo
     this.logo = this.add.image(logoX, logoY, 'inhance-logo');
-    this.logo.setScale(0.5); // Adjust scale as needed
+    this.logo.setScale(0.5);
     this.logo.setDepth(100);
     
-    // Optional: Add a subtle glow or highlight around the logo
     const logoBackground = this.add.rectangle(logoX, logoY, 400, 150, 0xffffff, 0.3);
     logoBackground.setDepth(99);
-    
-    // Add some text below the logo
-    this.welcomeText = this.add.text(
-      logoX,
-      logoY + 100,
-      'Welcome to Inhance',
-      {
-        fontSize: '32px',
-        fill: '#2c3e50',
-        fontStyle: 'bold',
-        fontFamily: 'Arial'
-      }
-    );
-    this.welcomeText.setOrigin(0.5);
-    this.welcomeText.setDepth(100);
   }
 
-  /**
-   * Create office decorations (desks, plants, etc.)
-   */
   createOfficeDecorations() {
     const groundY = GAME_CONFIG.height - 100;
     
-    // Create desks
     this.createDesk(250, groundY - 40);
     this.createDesk(600, groundY - 40);
     this.createDesk(950, groundY - 40);
     
-    // Create office plants
     this.createPlant(150, groundY - 10);
     this.createPlant(1250, groundY - 10);
     
-    // Create office windows
     this.createWindows();
     
-    // Create ceiling lights
     this.createCeilingLights();
   }
 
@@ -328,22 +268,16 @@ export default class InhanceScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create exit door to return to MainScene
-   */
   createExitDoor() {
     const groundY = GAME_CONFIG.height - 100;
     const doorX = 1300;
     const doorY = groundY - 60;
     
-    // Door frame
     this.exitDoor = this.add.rectangle(doorX, doorY, 80, 120, 0x8B4513);
     this.exitDoor.setStrokeStyle(4, 0x654321);
     
-    // Door handle
     const handle = this.add.circle(doorX - 20, doorY, 5, 0xFFD700);
     
-    // Door sign
     const sign = this.add.text(doorX, doorY - 80, 'EXIT', {
       fontSize: '16px',
       fill: '#ffffff',
@@ -357,9 +291,6 @@ export default class InhanceScene extends Phaser.Scene {
     sign.setDepth(501);
   }
 
-  /**
-   * Check if player is near exit door and handle interaction
-   */
   checkExitDoorInteraction() {
     if (!this.player || !this.exitDoor) return;
     
@@ -373,7 +304,6 @@ export default class InhanceScene extends Phaser.Scene {
     const interactionDistance = 100;
     
     if (distance < interactionDistance) {
-      // Show exit prompt
       if (!this.exitPrompt) {
         this.exitPrompt = this.add.text(
           this.exitDoor.x,
@@ -390,12 +320,10 @@ export default class InhanceScene extends Phaser.Scene {
         this.exitPrompt.setDepth(1000);
       }
       
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.exitToMainScene();
       }
     } else {
-      // Hide prompt if player walks away
       if (this.exitPrompt) {
         this.exitPrompt.destroy();
         this.exitPrompt = null;
@@ -403,26 +331,16 @@ export default class InhanceScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Exit back to MainScene
-   */
   exitToMainScene() {
-    // Set registry flag to indicate we're coming from InhanceScene
-    // This tells MainScene to continue shell music instead of switching to dear_katara
     this.registry.set('returningFromInhance', true);
     
-    // Fade out scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     
-    // Wait for fade out to complete before switching scenes
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      // Stop this scene
       this.scene.stop('InhanceScene');
       
-      // Resume main scene
       this.scene.resume('MainScene');
       
-      // Fade main scene back in
       const mainScene = this.scene.get('MainScene');
       if (mainScene) {
         mainScene.cameras.main.fadeIn(1000, 0, 0, 0);
@@ -430,9 +348,6 @@ export default class InhanceScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Create Luna NPC
-   */
   createLuna() {
     const groundY = GAME_CONFIG.height - 100;
     const lunaData = getNPCData('jojoGirl');
@@ -441,17 +356,12 @@ export default class InhanceScene extends Phaser.Scene {
     this.lunaGirl.setDepth(lunaData.depth);
     this.lunaGirl.play('girl_idle_right');
     
-    // Luna will follow the player
     this.lunaFollowEnabled = true;
   }
 
-  /**
-   * Update Luna's following behavior
-   */
   updateLunaFollowBehavior() {
     if (!this.lunaGirl || !this.player) return;
     
-    // Calculate distance to player
     const distance = Phaser.Math.Distance.Between(
       this.lunaGirl.x,
       this.lunaGirl.y,
@@ -459,11 +369,9 @@ export default class InhanceScene extends Phaser.Scene {
       this.player.y
     );
     
-    const followDistance = 80; // Stay this far from player
-    const runDistance = 200; // Start running if further than this
+    const followDistance = 80;
     
     if (distance > followDistance) {
-      // Calculate direction to player
       const angle = Phaser.Math.Angle.Between(
         this.lunaGirl.x,
         this.lunaGirl.y,
@@ -471,16 +379,13 @@ export default class InhanceScene extends Phaser.Scene {
         this.player.y
       );
       
-      // Determine speed based on distance
       const speed = 110;
       
-      // Move towards player
       this.lunaGirl.setVelocity(
         Math.cos(angle) * speed,
-        0 // Keep Y velocity at 0 since we have gravity
+        0
       );
       
-      // Update animation based on direction and speed
       const velocityX = this.lunaGirl.body.velocity.x;
       
       if (Math.abs(velocityX) > 5) {
@@ -493,25 +398,18 @@ export default class InhanceScene extends Phaser.Scene {
         }
       }
     } else {
-      // Stop moving when close enough
       this.lunaGirl.setVelocityX(0);
       
-      // Play idle animation if not already
       if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
-        // Determine direction based on player position
         const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
         this.lunaGirl.play(`girl_idle_${direction}`);
       }
     }
   }
 
-  /**
-   * Create NPCs (Lynne and Tom)
-   */
   createNPCs() {
     const groundY = GAME_CONFIG.height - 100;
     
-    // Create Lynne's idle animations (front and back)
     if (!this.anims.exists('ly_idle_front')) {
       this.anims.create({
         key: 'ly_idle_front',
@@ -538,7 +436,6 @@ export default class InhanceScene extends Phaser.Scene {
       });
     }
     
-    // Create Tom's idle animations (front and back)
     if (!this.anims.exists('tom_idle_front')) {
       this.anims.create({
         key: 'tom_idle_front',
@@ -565,22 +462,19 @@ export default class InhanceScene extends Phaser.Scene {
       });
     }
     
-    // Get NPC data from central data file
     const lynneData = getNPCData('lynne');
     const tomData = getNPCData('tom');
     
-    // Create NPCs at desk positions
     this.lynne = new NPC(this, 600, groundY - 60, 'ly_idle', lynneData);
     this.lynne.setDepth(lynneData.depth);
-    this.lynne.play('ly_idle_back'); // Start facing backwards
-    this.lynne.isFacingPlayer = false; // Track if NPC is facing player
+    this.lynne.play('ly_idle_back');
+    this.lynne.isFacingPlayer = false;
     
     this.tom = new NPC(this, 950, groundY - 60, 'tom_idle', tomData);
     this.tom.setDepth(tomData.depth);
-    this.tom.play('tom_idle_back'); // Start facing backwards
-    this.tom.isFacingPlayer = false; // Track if NPC is facing player
+    this.tom.play('tom_idle_back');
+    this.tom.isFacingPlayer = false;
     
-    // Store NPCs in an array for easy updates
     this.npcs = [this.lynne, this.tom];
   }
 
@@ -594,9 +488,7 @@ export default class InhanceScene extends Phaser.Scene {
     const turnAroundDistance = 150; // Distance at which NPC turns to face player
     
     this.npcs.forEach((npc, index) => {
-      // Skip Tom if he has faded out
       if (npc === this.tom && this.tomFadedOut) {
-        // Hide any existing interaction prompt
         if (npc.interactionPrompt) {
           npc.interactionPrompt.destroy();
           npc.interactionPrompt = null;
@@ -611,21 +503,17 @@ export default class InhanceScene extends Phaser.Scene {
         npc.y
       );
       
-      // Handle NPC turning to face player
       if (distance < turnAroundDistance && !npc.isFacingPlayer) {
-        // Turn to face the player
         npc.isFacingPlayer = true;
         const animKey = npc === this.lynne ? 'ly_idle_front' : 'tom_idle_front';
         npc.play(animKey);
       } else if (distance >= turnAroundDistance && npc.isFacingPlayer) {
-        // Turn back away from player
         npc.isFacingPlayer = false;
         const animKey = npc === this.lynne ? 'ly_idle_back' : 'tom_idle_back';
         npc.play(animKey);
       }
       
       if (distance < interactionDistance) {
-        // Show interaction prompt
         if (!npc.interactionPrompt) {
           npc.interactionPrompt = this.add.text(
             npc.x,
@@ -642,15 +530,12 @@ export default class InhanceScene extends Phaser.Scene {
           npc.interactionPrompt.setDepth(1001);
         }
         
-        // Update prompt position
         npc.interactionPrompt.setPosition(npc.x, npc.y - 60);
         
-        // Check if E key is pressed
         if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
           this.interactWithNPC(npc);
         }
       } else {
-        // Hide prompt if player walks away
         if (npc.interactionPrompt) {
           npc.interactionPrompt.destroy();
           npc.interactionPrompt = null;
@@ -659,13 +544,9 @@ export default class InhanceScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Interact with an NPC
-   */
   interactWithNPC(npc) {
     if (!npc.dialogues || npc.dialogues.length === 0) return;
     
-    // Track if player has spoken to Tom
     if (npc === this.tom && !this.hasSpokenToTom) {
       this.hasSpokenToTom = true;
     }
@@ -673,9 +554,6 @@ export default class InhanceScene extends Phaser.Scene {
     this.dialogueManager.startDialogue(npc.name, npc.dialogues);
   }
 
-  /**
-   * Check for computer interaction at player's desk
-   */
   checkComputerInteraction() {
     if (!this.player || !this.hasSpokenToTom || this.codingQuestCompleted) return;
     
@@ -689,7 +567,6 @@ export default class InhanceScene extends Phaser.Scene {
     const interactionDistance = 80;
     
     if (distance < interactionDistance) {
-      // Show computer prompt
       if (!this.computerPrompt) {
         this.computerPrompt = this.add.text(
           this.playerDeskPosition.x,
@@ -706,12 +583,10 @@ export default class InhanceScene extends Phaser.Scene {
         this.computerPrompt.setDepth(1001);
       }
       
-      // Check if E key is pressed
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.openComputerView();
       }
     } else {
-      // Hide prompt if player walks away
       if (this.computerPrompt) {
         this.computerPrompt.destroy();
         this.computerPrompt = null;
@@ -719,29 +594,23 @@ export default class InhanceScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Open the computer view with dev tools simulation
-   */
   openComputerView() {
     this.computerViewActive = true;
     
-    // Hide the computer prompt
     if (this.computerPrompt) {
       this.computerPrompt.destroy();
       this.computerPrompt = null;
     }
     
-    // Initialize margin values (button starts off-center)
     this.marginValues = {
       top: 20,
       right: 20,
       bottom: 20,
       left: 20
     };
-    this.selectedProperty = 'left'; // Currently selected margin property
-    this.devElements = []; // Store all dev tools elements for cleanup
+    this.selectedProperty = 'left';
+    this.devElements = [];
     
-    // Create dark overlay
     this.computerOverlay = this.add.rectangle(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
@@ -1851,15 +1720,11 @@ export default class InhanceScene extends Phaser.Scene {
     this.updateCommandDisplay();
   }
 
-  /**
-   * Complete the coding quest
-   */
   completeCodeQuest() {
     if (this.codingQuestCompleted) return;
     this.codingQuestCompleted = true;
     this.gitCommitActive = false;
     
-    // Clean up git terminal
     if (this.gitTerminalElements) {
       this.gitTerminalElements.forEach(element => {
         if (element && element.destroy) element.destroy();
@@ -1867,13 +1732,11 @@ export default class InhanceScene extends Phaser.Scene {
       this.gitTerminalElements = [];
     }
     
-    // Remove git keyboard listener
     if (this.gitInputHandler) {
       this.input.keyboard.off('keydown', this.gitInputHandler);
       this.gitInputHandler = null;
     }
     
-    // Show final success message
     const successText = this.add.text(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
@@ -1892,14 +1755,11 @@ export default class InhanceScene extends Phaser.Scene {
     successText.setDepth(2020);
     this.devElements.push(successText);
     
-    // Close after delay
     this.time.delayedCall(3000, () => {
       this.closeComputerView();
       
-      // Reset Luna's position and visibility after quest completion
       this.resetLunaAfterQuest();
       
-      // Show Tom's reaction
       this.time.delayedCall(500, () => {
         this.tomPostQuestDialogueActive = true;
         this.dialogueManager.startDialogue('Tom', [
@@ -1911,59 +1771,45 @@ export default class InhanceScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Fade out Tom sprite after dialogue completes
-   */
   fadeOutTom() {
     if (!this.tom) return;
     
-    // Hide any existing interaction prompt
     if (this.tom.interactionPrompt) {
       this.tom.interactionPrompt.destroy();
       this.tom.interactionPrompt = null;
     }
     
-    // Create a fade out tween
     this.tweens.add({
       targets: this.tom,
       alpha: 0,
-      duration: 4000, // 4 seconds fade
+      duration: 6000,
       ease: 'Power2',
       onComplete: () => {
-        // Hide Tom and mark as faded out
         this.tom.setVisible(false);
         this.tomFadedOut = true;
       }
     });
   }
 
-  /**
-   * Reset Luna's position and visibility after quest completion
-   */
   resetLunaAfterQuest() {
     if (!this.lunaGirl || !this.player) return;
     
-    // Ensure Luna is visible
     this.lunaGirl.setVisible(true);
     this.lunaGirl.setAlpha(1);
     
-    // Position Luna near the player (slightly behind/to the side)
     const groundY = GAME_CONFIG.height - 100;
     const playerX = this.player.x;
     const playerY = this.player.y;
     
-    // Position Luna slightly to the left of the player, at ground level
-    const lunaX = Math.max(50, playerX - 100); // Ensure she's not off-screen
+    const lunaX = Math.max(50, playerX - 100);
     const lunaY = groundY - 20;
     
     this.lunaGirl.setPosition(lunaX, lunaY);
     this.lunaGirl.setVelocity(0, 0);
     
-    // Reset animation to idle
     const direction = playerX > lunaX ? 'right' : 'left';
     this.lunaGirl.play(`girl_idle_${direction}`);
     
-    // Ensure follow behavior is enabled
     this.lunaFollowEnabled = true;
   }
 

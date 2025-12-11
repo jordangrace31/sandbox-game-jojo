@@ -1,8 +1,3 @@
-/**
- * CampScene
- * A nighttime camping quest scene where the player must gather items to build shelter
- */
-
 import Phaser from 'phaser';
 import Player from '../entities/Player.js';
 import NPC from '../entities/NPC.js';
@@ -10,6 +5,7 @@ import AnimationManager from '../systems/AnimationManager.js';
 import DialogueManager from '../systems/DialogueManager.js';
 import MusicManager from '../systems/MusicManager.js';
 import { PLAYER_CONFIG, GAME_CONFIG } from '../config.js';
+import { getNPCData } from '../data/npcs.js';
 
 export default class CampScene extends Phaser.Scene {
   constructor() {
@@ -17,83 +13,58 @@ export default class CampScene extends Phaser.Scene {
   }
 
   create() {
-    // Set world bounds (smaller scene)
     const sceneWidth = 1400;
     const sceneHeight = 700;
     this.physics.world.setBounds(0, 0, sceneWidth, sceneHeight);
     
-    // Initialize systems
     this.animationManager = new AnimationManager(this);
     this.dialogueManager = new DialogueManager(this);
     this.musicManager = new MusicManager(this);
     
-    // Start camp music with fade in
     this.musicManager.play('hells_bells', 0.4, true, 1500);
-    
-    // Quest tracking
-    this.itemsCollected = {
-      tarp: false,
-      rope: false,
-      cloth: false,
-      bed: false,
-      bed2: false
-    };
     
     this.itemsDelivered = [];
     this.requiredOrder = ['tarp', 'rope', 'cloth', 'bed', 'bed2'];
     this.currentHeldItem = null;
     
-    // Create the world
     this.createNightSky();
     this.createGround();
     this.createTree();
     
-    // Create the player
     this.player = new Player(this, 100, 550);
     this.player.setDepth(1000);
     
-    // Create Luna NPC
     this.createLuna();
     
-    // Create collectible items
     this.createCollectibles();
     
-    // Set up camera
     this.cameras.main.setBounds(0, 0, sceneWidth, sceneHeight);
     
-    // Set up collisions
     this.physics.add.collider(this.player, this.groundPlatform);
     this.physics.add.collider(this.luna, this.groundPlatform);
 
     this.createObstacles();
     
-    // Set up interaction key
     this.interactionKey = this.input.keyboard.addKey('E');
     
-    // Fade in from black
     this.cameras.main.fadeIn(1000, 0, 0, 0);
     
-    // Show initial dialogue after fade in
     this.time.delayedCall(1500, () => {
       this.showInitialDialogue();
     });
   }
 
   update() {
-    // Update player
     this.player.update();
     
-    // Update Luna
     if (this.luna) {
       this.luna.update();
     }
     
-    // Update dialogue manager
     if (this.dialogueManager) {
       this.dialogueManager.update();
     }
     
-    // Update bed position to follow moving platform
     if (this.movingPlatform && this.bed && this.bed.active) {
       this.bed.y = this.movingPlatform.y - 40;
     }
@@ -102,16 +73,11 @@ export default class CampScene extends Phaser.Scene {
       this.rope.y = this.movingPlatform3.y - 40;
     }
     
-    // Check for item interactions
     this.checkItemInteractions();
     
-    // Check for tree interactions
     this.checkTreeInteraction();
   }
 
-  /**
-   * Create a darker gradient sky for night time
-   */
   createNightSky() {
     const gradient = this.add.graphics();
     
@@ -119,8 +85,6 @@ export default class CampScene extends Phaser.Scene {
     const stripHeight = GAME_CONFIG.height / strips;
     
     for (let i = 0; i < strips; i++) {
-      const progress = i / strips;
-      // Dark blue/purple night sky
       const color = Phaser.Display.Color.Interpolate.ColorWithColor(
         Phaser.Display.Color.HexStringToColor('#0a1628'), // Very dark blue
         Phaser.Display.Color.HexStringToColor('#1a3a52'), // Slightly lighter
@@ -134,13 +98,9 @@ export default class CampScene extends Phaser.Scene {
     
     gradient.setScrollFactor(0);
     
-    // Add some stars
     this.createStars();
   }
 
-  /**
-   * Create stars in the night sky
-   */
   createStars() {
     for (let i = 0; i < 50; i++) {
       const x = Math.random() * 1400;
@@ -161,13 +121,9 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Create ground
-   */
   createGround() {
     const groundY = GAME_CONFIG.height - 80;
     
-    // Create main ground platform
     this.groundPlatform = this.add.rectangle(
       700,
       GAME_CONFIG.height - 20,
@@ -177,7 +133,6 @@ export default class CampScene extends Phaser.Scene {
     );
     this.physics.add.existing(this.groundPlatform, true);
     
-    // Dark grass layer
     const grassGraphics = this.add.graphics();
     grassGraphics.fillStyle(0x1a5c1a, 1); // Dark green
     grassGraphics.fillRect(0, groundY, 1400, 60);
@@ -188,9 +143,6 @@ export default class CampScene extends Phaser.Scene {
     this.createGrassBlades(grassGraphics, groundY);
   }
 
-    /**
-   * Create small grass blade details
-   */
     createGrassBlades(graphics, groundY) {
       graphics.lineStyle(2, 0x2E8B57, 1);
       
@@ -200,7 +152,7 @@ export default class CampScene extends Phaser.Scene {
         const bladeHeight = 8 + Math.random() * 8;
         const bladeY = groundY + 10;
         
-        // Draw a simple blade
+        // Draw a simple blades
         graphics.beginPath();
         graphics.moveTo(bladeX, bladeY);
         graphics.lineTo(bladeX + 2, bladeY - bladeHeight);
@@ -208,9 +160,6 @@ export default class CampScene extends Phaser.Scene {
       }
     }
 
-  /**
-   * Create a tree for dropping items
-   */
   createTree() {
     const treeX = 1200;
     const treeY = 570;
@@ -220,33 +169,17 @@ export default class CampScene extends Phaser.Scene {
     this.tree.setDepth(800);
     this.tree.setScale(1.5);
     
-    // Store tree position for interactions
     this.treePosition = { x: treeX, y: treeY };
   }
 
-  /**
-   * Create Luna NPC
-   */
   createLuna() {
-    const lunaData = {
-      name: "Jordan",
-      dialogues: [
-        "Oh no! It seems to be getting dark!",
-        "We'll need somewhere to sleep tonight.",
-        "Maybe we can make something from the stuff we find here?"
-      ],
-      quests: [],
-      depth: 999
-    };
+    const lunaData = getNPCData('jojoGirl');
     
     this.luna = new NPC(this, 200, 550, 'jojo_girl_idle', lunaData);
     this.luna.setDepth(999);
     this.luna.play('girl_idle_down');
   }
 
-  /**
-   * Show initial dialogue
-   */
   showInitialDialogue() {
     this.dialogueManager.startDialogue("Jordan", [
       "Oh no! It seems to be getting dark!",
@@ -257,9 +190,6 @@ export default class CampScene extends Phaser.Scene {
     ]);
   }
 
-  /**
-   * Create collectible items
-   */
   createCollectibles() {
     const groundY = 620;
     
@@ -313,7 +243,6 @@ export default class CampScene extends Phaser.Scene {
     tarpGraphicContainer.setScale(1, 0.5);
     tarpGraphicContainer.setRotation(Phaser.Math.DegToRad(2));
     
-    // Label on top - stays upright and normal size
     const tarpLabel = this.add.text(0, -40, 'Tarp', {
       fontSize: '12px',
       fill: '#ffffff',
@@ -363,7 +292,6 @@ export default class CampScene extends Phaser.Scene {
     });
     bedLabel.setOrigin(0.5);
 
-    // Position bed on the moving platform (will be updated in createObstacles)
     this.bed = this.add.container(300, groundY - 220);
     const bedSprite = this.add.tileSprite(0, 0, 2400, 1560, 'bed');
     bedSprite.setScale(0.03);
@@ -381,13 +309,9 @@ export default class CampScene extends Phaser.Scene {
     this.collectibleItems = [this.tarp, this.rope, this.bed, this.cloth, this.bed2];
   }
 
-  /**
-   * Check for item interactions
-   */
   checkItemInteractions() {
     if (!this.player || this.currentHeldItem) return;
     
-    // Don't check if dialogue is active
     if (this.dialogueManager && this.dialogueManager.isDialogueActive()) {
       return;
     }
@@ -413,10 +337,6 @@ export default class CampScene extends Phaser.Scene {
     }
     
     if (nearestItem) {
-      if (!this.itemPrompt) {
-        // this.showItemPrompt(nearestItem);
-      }
-      
       if (Phaser.Input.Keyboard.JustDown(this.interactionKey)) {
         this.pickUpItem(nearestItem);
       }
@@ -425,9 +345,6 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Show item pickup prompt
-   */
   showItemPrompt(item) {
     if (this.itemPrompt) return;
     
@@ -446,9 +363,6 @@ export default class CampScene extends Phaser.Scene {
     this.itemPrompt.setDepth(1001);
   }
 
-  /**
-   * Hide item prompt
-   */
   hideItemPrompt() {
     if (this.itemPrompt) {
       this.itemPrompt.destroy();
@@ -456,9 +370,6 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Pick up an item
-   */
   pickUpItem(item) {
     this.currentHeldItem = item.itemType;
     item.setVisible(false);
@@ -466,13 +377,9 @@ export default class CampScene extends Phaser.Scene {
     
     this.hideItemPrompt();
     
-    // Show held item indicator
     this.showHeldItemIndicator();
   }
 
-  /**
-   * Show what item the player is holding
-   */
   showHeldItemIndicator() {
     if (this.heldItemText) {
       this.heldItemText.destroy();
@@ -502,9 +409,6 @@ export default class CampScene extends Phaser.Scene {
     this.heldItemText.setDepth(2000);
   }
 
-  /**
-   * Check for tree interaction to drop items
-   */
   checkTreeInteraction() {
     if (!this.player || !this.currentHeldItem) return;
     
@@ -530,9 +434,6 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Show tree drop prompt
-   */
   showTreePrompt() {
     if (this.treePrompt) return;
     
@@ -551,9 +452,6 @@ export default class CampScene extends Phaser.Scene {
     this.treePrompt.setDepth(1001);
   }
 
-  /**
-   * Hide tree prompt
-   */
   hideTreePrompt() {
     if (this.treePrompt) {
       this.treePrompt.destroy();
@@ -561,9 +459,6 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Drop item at tree
-   */
   dropItemAtTree() {  
     this.itemsDelivered.push(this.currentHeldItem);
     this.currentHeldItem = null;
@@ -575,10 +470,8 @@ export default class CampScene extends Phaser.Scene {
     
     this.hideTreePrompt();
     
-    // Show success message
     this.showMessage(`${this.itemsDelivered.length}/${this.requiredOrder.length} items placed.`);
     
-    // Check if quest is complete
     if (this.itemsDelivered.length === this.requiredOrder.length) {
       this.tent = this.add.container(1300, 605);
       const tentSprite = this.add.tileSprite(0, 0, 350, 350, 'tent');
@@ -590,9 +483,6 @@ export default class CampScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Show a temporary message
-   */
   showMessage(text) {
     const msg = this.add.text(
       GAME_CONFIG.width / 2,
@@ -619,11 +509,7 @@ export default class CampScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Complete the camping quest
-   */
   completeQuest() {
-    // Award experience
     const mainScene = this.scene.get('MainScene');
     if (mainScene && mainScene.playerStats) {
       mainScene.playerStats.experience += 1000;
@@ -632,12 +518,10 @@ export default class CampScene extends Phaser.Scene {
       }
     }
     
-    // Luna plays emote
     if (this.luna) {
       this.luna.play('girl_emote');
     }
     
-    // Show completion message
     const completeMsg = this.add.text(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
@@ -654,9 +538,7 @@ export default class CampScene extends Phaser.Scene {
     completeMsg.setScrollFactor(0);
     completeMsg.setDepth(2002);
     
-    // Fade out and return to main scene
     this.time.delayedCall(5000, () => {
-      // Fade out camp music
       this.musicManager.stop(1000);
       
       this.cameras.main.fadeOut(1000, 0, 0, 0);
@@ -694,7 +576,6 @@ export default class CampScene extends Phaser.Scene {
   createObstacles() {
     const groundY = GAME_CONFIG.height - 80;
 
-    // Create moving platform
     this.movingPlatform = this.createPlatform(300, groundY - 160, 'platform_3', false);
     this.movingPlatform.body.setImmovable(true);
     this.movingPlatform.body.setAllowGravity(false);
@@ -708,7 +589,6 @@ export default class CampScene extends Phaser.Scene {
     this.movingPlatform3.body.setAllowGravity(false);
 
     
-    // Add tween to move platform left and right
     this.tweens.add({
       targets: this.movingPlatform,
       y: 300,
