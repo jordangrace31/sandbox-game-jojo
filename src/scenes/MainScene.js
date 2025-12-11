@@ -913,11 +913,11 @@ export default class MainScene extends Phaser.Scene {
     });
     
     // Fade out the scene slowly
-    this.cameras.main.fadeOut(10000, 0, 0, 0);
+    this.cameras.main.fadeOut(8000, 0, 0, 0);
     
     // Optional: Stop music with fade out
     if (this.musicManager) {
-      this.musicManager.stop(10000);
+      this.musicManager.stop(8000);
     }
   }
 
@@ -1778,7 +1778,7 @@ export default class MainScene extends Phaser.Scene {
   showWelcomeDialog() {
     this.dialogueManager.startDialogue(
       'Narrator',
-      "The mechanics of this game are pretty simple. Use the arrow keys to move and the space bar to jump."
+      "Use the arrow keys to move left and right, and the space bar to jump. Press E to interact with people and objects."
     );
   }
 
@@ -1891,6 +1891,9 @@ export default class MainScene extends Phaser.Scene {
     this.createPlatform(11700, groundY - 350, 'platform_1');
 
     this.createSpikes(10700, groundY + 20, 2200);
+
+    this.createPlatform(14100, groundY - 350, 'platform_1');
+    this.createPlatform(14700, groundY - 450, 'platform_0');
     
 
     const rock = this.add.container(13400, groundY - 20);

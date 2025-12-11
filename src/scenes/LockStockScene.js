@@ -79,7 +79,7 @@ export default class LockStockScene extends Phaser.Scene {
     // Show Luna's welcome dialogue after fade-in completes
     this.cameras.main.once('camerafadeincomplete', () => {
       if (this.lunaGirl && this.dialogueManager) {
-        this.dialogueManager.startDialogue('Jordan', 'Sorry I just had a leg day so I\'m learning how to run and jump again.');
+        this.dialogueManager.startDialogue('Jordan', 'Sorry, you may need to be patient with me. I just had a leg day so I\'m learning how to run and jump again, but I\'m trying my best to follow, I promise');
       }
     });
     

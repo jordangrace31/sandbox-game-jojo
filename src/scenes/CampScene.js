@@ -252,7 +252,8 @@ export default class CampScene extends Phaser.Scene {
       "Oh no! It seems to be getting dark!",
       "We'll need somewhere to sleep tonight.",
       "Maybe we can make something from the stuff we find here?",
-      "Remember to press E to pick up any items you see!"
+      "Remember to press E to pick up any items you see!",
+      "Seems like something went wrong with the physics in this world. You can only jump when a platform is moving up..."
     ]);
   }
 

@@ -37,7 +37,7 @@ export default class ClubScene extends Phaser.Scene {
     this.createWalls();
     this.createFloor();
     this.createBar();
-    // this.createDancefloor();
+    this.createDancefloor();
     this.createBarStools();
     this.createLighting();
     this.createExitDoor();
@@ -420,45 +420,40 @@ export default class ClubScene extends Phaser.Scene {
    * Create dancefloor
    */
   createDancefloor() {
+    // Match the floor positioning
+    const floorY = GAME_CONFIG.height - 120; // Same as createFloor()
+    
+    // Position dancefloor on the actual floor
     const floorX = 300;
-    const floorY = 400;
+    const dancefloorY = floorY - 20; // Start at the top of the floor graphics
     const floorWidth = 400;
-    const floorHeight = 200;
+    const floorHeight = 120; // Fit within the floor height (140px total, leave some margin)
     
     // Dancefloor container
     const dancefloor = this.add.graphics();
     
-    // Create checkered pattern
-    const tileSize = 50;
-    for (let row = 0; row < floorHeight / tileSize; row++) {
-      for (let col = 0; col < floorWidth / tileSize; col++) {
+    // Create checkered pattern matching floor tile size
+    const tileSize = 60; // Match the floor tile size from createFloor()
+    const numCols = Math.floor(floorWidth / tileSize);
+    const numRows = Math.floor(floorHeight / tileSize);
+    
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
         const isEven = (row + col) % 2 === 0;
         const color = isEven ? 0x1a1a1a : 0x2a2a2a;
         
         dancefloor.fillStyle(color, 1);
         dancefloor.fillRect(
           floorX + col * tileSize,
-          floorY + row * tileSize,
+          dancefloorY + row * tileSize,
           tileSize,
           tileSize
         );
       }
     }
     
-    // Border around dancefloor
-    dancefloor.lineStyle(3, 0xff0000, 0.6);
-    dancefloor.strokeRect(floorX, floorY, floorWidth, floorHeight);
-    
     // Add animated lights on dancefloor tiles
-    this.createDancefloorLights(floorX, floorY, floorWidth, floorHeight, tileSize);
-    
-    // Dancefloor label
-    const label = this.add.text(floorX + floorWidth / 2, floorY - 30, 'DANCEFLOOR', {
-      fontSize: '20px',
-      fill: '#ff00ff',
-      fontStyle: 'bold'
-    });
-    label.setOrigin(0.5);
+    this.createDancefloorLights(floorX, dancefloorY, numCols * tileSize, numRows * tileSize, tileSize);
   }
 
   /**
@@ -467,8 +462,11 @@ export default class ClubScene extends Phaser.Scene {
   createDancefloorLights(floorX, floorY, floorWidth, floorHeight, tileSize) {
     const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xff00ff, 0xffff00];
     
-    for (let row = 0; row < floorHeight / tileSize; row++) {
-      for (let col = 0; col < floorWidth / tileSize; col++) {
+    const numRows = Math.floor(floorHeight / tileSize);
+    const numCols = Math.floor(floorWidth / tileSize);
+    
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
         const light = this.add.circle(
           floorX + col * tileSize + tileSize / 2,
           floorY + row * tileSize + tileSize / 2,
