@@ -136,16 +136,26 @@ export default class MainScene extends Phaser.Scene {
       // Update stats UI to reflect any changes
       this.updateStatsUI(true, true, true);
       
-      // Restart music when scene resumes (e.g., after CampScene)
+      // Check if we're returning from InhanceScene
+      const returningFromInhance = this.registry.get('returningFromInhance');
+      
+      // Restart music when scene resumes
       if (this.musicManager) {
-        // Stop any currently playing music
-        this.musicManager.stop(0);
-        // Small delay to ensure cleanup is complete before starting new music
-        this.time.delayedCall(100, () => {
-          if (this.musicManager) {
-            this.musicManager.play('dear_katara', 0.5, true, 2000);
-          }
-        });
+        // If returning from InhanceScene, continue shell music instead of switching
+        if (returningFromInhance) {
+          // Clear the flag
+          this.registry.set('returningFromInhance', false);
+        
+        } else {
+          // Stop any currently playing music
+          this.musicManager.stop(0);
+          // Small delay to ensure cleanup is complete before starting new music
+          this.time.delayedCall(100, () => {
+            if (this.musicManager) {
+              this.musicManager.play('dear_katara', 0.5, true, 2000);
+            }
+          });
+        }
       }
     });
   }

@@ -223,6 +223,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.audio('dear_katara', 'assets/audio/DearKatara.m4a');
     this.load.audio('hells_bells', 'assets/audio/HellsBells.m4a');
     this.load.audio('lock_stock', 'assets/audio/TheWayIAre.m4a');
+    this.load.audio('shell', 'assets/audio/Shell.m4a');
     
     // Load sound effects (add these if you have the files)
     // this.load.audio('pickup_sound', 'assets/audio/pickup.mp3');

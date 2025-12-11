@@ -29,7 +29,7 @@ export default class InhanceScene extends Phaser.Scene {
     this.musicManager = new MusicManager(this);
     
     // Start office music (using lock_stock as placeholder)
-    this.musicManager.play('lock_stock', 0.3, true, 1500);
+    this.musicManager.play('shell', 0.3, true, 1500);
     
     // Create the office environment
     this.createOfficeBackground();
@@ -393,8 +393,9 @@ export default class InhanceScene extends Phaser.Scene {
    * Exit back to MainScene
    */
   exitToMainScene() {
-    // Fade out music
-    this.musicManager.stop(1000);
+    // Set registry flag to indicate we're coming from InhanceScene
+    // This tells MainScene to continue shell music instead of switching to dear_katara
+    this.registry.set('returningFromInhance', true);
     
     // Fade out scene
     this.cameras.main.fadeOut(1000, 0, 0, 0);
