@@ -1,8 +1,3 @@
-/**
- * Main Entry Point
- * Initializes the Phaser game with all scenes
- */
-
 import Phaser from 'phaser';
 import { GAME_CONFIG } from './config.js';
 import IntroScene from './scenes/IntroScene.js';

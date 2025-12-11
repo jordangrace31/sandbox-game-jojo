@@ -1,8 +1,3 @@
-/**
- * DialogueManager
- * Manages dialogue display and progression
- * Can be used to create a dialogue UI overlay
- */
 
 export default class DialogueManager {
   constructor(scene) {
@@ -14,10 +9,7 @@ export default class DialogueManager {
     this.dialogueList = [];
     this.currentDialogueIndex = 0;
   }
-
-  /**
-   * Start a dialogue sequence
-   */
+   
   startDialogue(npcName, dialogueText) {
     this.isActive = true;
     
@@ -36,16 +28,12 @@ export default class DialogueManager {
     this.showDialogueBox();
   }
 
-  /**
-   * Show the dialogue box UI
-   */
   showDialogueBox() {
     if (this.dialogueBox) return;
     
     const width = this.scene.cameras.main.width;
     const height = this.scene.cameras.main.height;
     
-    // Create dialogue box background
     this.dialogueBox = this.scene.add.container(0, 0);
     
     const boxHeight = 120;
@@ -58,7 +46,6 @@ export default class DialogueManager {
       0.8
     );
     
-    // NPC name
     const nameText = this.scene.add.text(
       30,
       height - boxHeight - 10,
@@ -70,7 +57,6 @@ export default class DialogueManager {
       }
     );
     
-    // Dialogue text
     const dialogueText = this.scene.add.text(
       30,
       height - boxHeight + 20,
@@ -82,7 +68,6 @@ export default class DialogueManager {
       }
     );
     
-    // Prompt to continue with progress indicator
     const progress = `${this.currentDialogueIndex + 1}/${this.dialogueList.length}`;
     const promptMessage = this.currentDialogueIndex < this.dialogueList.length - 1 
       ? `Press ENTER (${progress})` 
@@ -99,13 +84,10 @@ export default class DialogueManager {
     );
     
     this.dialogueBox.add([box, nameText, dialogueText, promptText]);
-    this.dialogueBox.setDepth(2000); // Ensure it's on top
+    this.dialogueBox.setDepth(2000); 
     this.dialogueBox.setScrollFactor(0); // Fixed to camera, not world
   }
 
-  /**
-   * Close the dialogue box
-   */
   closeDialogue() {
     if (this.dialogueBox) {
       this.dialogueBox.destroy();
@@ -116,47 +98,31 @@ export default class DialogueManager {
     this.currentDialogue = null;
   }
 
-  /**
-   * Check if dialogue is currently active
-   */
   isDialogueActive() {
     return this.isActive;
   }
 
-  /**
-   * Advance to next dialogue or close if finished
-   */
   nextDialogue() {
     this.currentDialogueIndex++;
     
     if (this.currentDialogueIndex < this.dialogueList.length) {
-      // Show next dialogue
       this.currentDialogue.text = this.dialogueList[this.currentDialogueIndex];
       this.updateDialogueBox();
     } else {
-      // All dialogues shown, close the box
       this.closeDialogue();
     }
   }
 
-  /**
-   * Update the dialogue box text without recreating it
-   */
   updateDialogueBox() {
     if (!this.dialogueBox) return;
     
-    // Destroy old dialogue box and create new one
     this.dialogueBox.destroy();
     this.dialogueBox = null;
     this.showDialogueBox();
   }
 
-  /**
-   * Update dialogue (call in scene's update)
-   */
   update() {
     if (this.isActive) {
-      // Listen for enter to advance dialogue
       if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
         this.nextDialogue();
       }

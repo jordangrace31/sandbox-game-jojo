@@ -1,7 +1,3 @@
-/**
- * QuestManager
- * Tracks and manages all active quests
- */
 
 import { QUEST_STATUS } from '../data/quests.js';
 
@@ -11,10 +7,7 @@ export default class QuestManager {
     this.activeQuests = [];
     this.completedQuests = [];
   }
-
-  /**
-   * Accept a new quest
-   */
+   
   acceptQuest(quest) {
     quest.status = QUEST_STATUS.IN_PROGRESS;
     this.activeQuests.push(quest);
@@ -22,32 +15,6 @@ export default class QuestManager {
     this.showQuestNotification(`New Quest: ${quest.title}`);
   }
 
-  /**
-   * Update quest progress
-   */
-  updateQuestProgress(questId, objectiveId, progress) {
-    const quest = this.activeQuests.find(q => q.id === questId);
-    if (!quest) return;
-    
-    const objective = quest.objectives.find(obj => obj.id === objectiveId);
-    if (!objective) return;
-    
-    objective.current = Math.min(objective.current + progress, objective.target);
-    
-    // Check if objective completed
-    if (objective.current >= objective.target) {
-      objective.completed = true;
-    }
-    
-    // Check if all objectives completed
-    if (quest.objectives.every(obj => obj.completed)) {
-      this.completeQuest(questId);
-    }
-  }
-
-  /**
-   * Complete a quest
-   */
   completeQuest(questId) {
     const questIndex = this.activeQuests.findIndex(q => q.id === questId);
     if (questIndex === -1) return;
@@ -55,24 +22,18 @@ export default class QuestManager {
     const quest = this.activeQuests[questIndex];
     quest.status = QUEST_STATUS.COMPLETED;
     
-    // Give rewards
     this.giveRewards(quest.rewards);
     
-    // Move to completed quests
     this.completedQuests.push(quest);
     this.activeQuests.splice(questIndex, 1);
     
     this.showQuestNotification(`Quest Complete: ${quest.title}`);
     
-    // Call onComplete callback if exists
     if (quest.onComplete) {
       quest.onComplete();
     }
   }
 
-  /**
-   * Give quest rewards to player
-   */
   giveRewards(rewards) {
     const hasGold = rewards.gold && rewards.gold > 0;
     const hasExp = rewards.experience && rewards.experience > 0;
@@ -90,15 +51,11 @@ export default class QuestManager {
       this.scene.playerStats.items.push(...rewards.items);
     }
     
-    // Update the UI with animations
     if (this.scene.updateStatsUI) {
       this.scene.updateStatsUI(hasGold, hasExp, hasItems);
     }
   }
 
-  /**
-   * Show quest notification on screen
-   */
   showQuestNotification(message) {
     const notif = this.scene.add.text(
       this.scene.cameras.main.width / 2,
@@ -114,7 +71,6 @@ export default class QuestManager {
     notif.setOrigin(0.5);
     notif.setDepth(1000);
     
-    // Fade out after 3 seconds
     this.scene.tweens.add({
       targets: notif,
       alpha: 0,
@@ -122,27 +78,6 @@ export default class QuestManager {
       delay: 2000,
       onComplete: () => notif.destroy()
     });
-  }
-
-  /**
-   * Get all active quests
-   */
-  getActiveQuests() {
-    return this.activeQuests;
-  }
-
-  /**
-   * Get all completed quests
-   */
-  getCompletedQuests() {
-    return this.completedQuests;
-  }
-
-  /**
-   * Check if a specific quest is active
-   */
-  isQuestActive(questId) {
-    return this.activeQuests.some(q => q.id === questId);
   }
 }
 

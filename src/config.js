@@ -1,7 +1,3 @@
-/**
- * Game Configuration
- * Central place for all game settings and constants
- */
 
 export const GAME_CONFIG = {
   width: 1400,
@@ -33,7 +29,7 @@ export const ANIMATION_CONFIG = {
 };
 
 export const WORLD_CONFIG = {
-  width: 15000,        // 4x wider than screen for exploration
+  width: 15000,       
   height: 700,
   groundHeight: 80,   // Height of the ground/grass area
   skyColors: {

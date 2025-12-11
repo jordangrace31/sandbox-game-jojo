@@ -1,7 +1,3 @@
-/**
- * MusicManager
- * Manages background music and sound effects across scenes
- */
 
 export default class MusicManager {
   constructor(scene) {
@@ -13,7 +9,6 @@ export default class MusicManager {
   }
 
   /**
-   * Play a music track
    * @param {string} key - The audio key to play
    * @param {number} volume - Volume level (0.0 to 1.0)
    * @param {boolean} loop - Whether to loop the track
