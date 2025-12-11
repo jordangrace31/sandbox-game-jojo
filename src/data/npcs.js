@@ -90,8 +90,7 @@ export const NPC_DATA = {
     name: "Tom",
     dialogues: [
       "Hey man, whats up?",
-      "I'm currently debugging some LP code. The usual Monday stuff.",
-      "I can't seem to get this div to center properly...",
+      "I can't seem to get this button centered properly...",
       "Could you check your computer? I sent the code there.",
       "Maybe you can figure out the right CSS properties to use!"
     ],

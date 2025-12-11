@@ -69,6 +69,8 @@ export default class InhanceScene extends Phaser.Scene {
     this.hasSpokenToTom = false;
     this.codingQuestCompleted = false;
     this.computerViewActive = false;
+    this.buttonCentered = false;
+    this.gitCommitActive = false;
     
     // Store first desk position for computer interaction
     this.playerDeskPosition = { x: 250, y: GAME_CONFIG.height - 140 };
@@ -1060,10 +1062,10 @@ export default class InhanceScene extends Phaser.Scene {
     // Instructions (positioned below the monitor stand)
     this.instructionText = this.add.text(
       screenX,
-      screenY + screenHeight / 2 + 100,
+      screenY + screenHeight / 2 + 80,
       'Use [1-9] to set margin-left | [↑↓] fine adjust | [TAB] change property | [ESC] close',
       {
-        fontSize: '14px',
+        fontSize: '18px',
         fill: '#00ff00',
         backgroundColor: 'rgba(0,0,0,0.8)',
         padding: { x: 15, y: 8 },
@@ -1245,6 +1247,9 @@ export default class InhanceScene extends Phaser.Scene {
   updateDevTools() {
     if (!this.computerViewActive) return;
     
+    // Don't process dev tools input if git commit is active
+    if (this.gitCommitActive) return;
+    
     // Check number keys
     this.numberKeys.forEach(({ key, value }) => {
       if (Phaser.Input.Keyboard.JustDown(key)) {
@@ -1343,9 +1348,419 @@ export default class InhanceScene extends Phaser.Scene {
     const isHorizontallyCentered = Math.abs(this.marginValues.left - targetMarginLeft) <= 5;
     const isVerticallyCentered = Math.abs(this.marginValues.top - targetMarginTop) <= 5;
     
-    if (isHorizontallyCentered && isVerticallyCentered) {
-      this.completeCodeQuest();
+    if (isHorizontallyCentered && isVerticallyCentered && !this.buttonCentered) {
+      this.buttonCentered = true;
+      this.showGitCommitStep();
     }
+  }
+
+  /**
+   * Show git commit step after button is centered
+   */
+  showGitCommitStep() {
+    // Flash the button green
+    this.targetButton.setFillStyle(0x27ae60);
+    
+    // Show initial success message
+    const successText = this.add.text(
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2 - 200,
+      '✓ PERFECTLY CENTERED!',
+      {
+        fontSize: '20px',
+        fill: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 20, y: 15 },
+        align: 'center',
+        fontFamily: 'Courier New'
+      }
+    );
+    successText.setOrigin(0.5);
+    successText.setScrollFactor(0);
+    successText.setDepth(2020);
+    this.devElements.push(successText);
+    
+    // Hide after a moment
+    this.time.delayedCall(2000, () => {
+      if (successText) successText.destroy();
+      this.openGitTerminal();
+    });
+  }
+
+  /**
+   * Open git terminal interface
+   */
+  openGitTerminal() {
+    this.gitCommitActive = true;
+    this.gitTerminalElements = [];
+    this.gitCommandBuffer = '';
+    this.gitStep = 'status'; // status -> add -> commit -> done
+    
+    const screenX = GAME_CONFIG.width / 2;
+    const screenY = GAME_CONFIG.height / 2;
+    
+    // Terminal window (VS Code style)
+    const termWidth = 700;
+    const termHeight = 400;
+    
+    // Terminal shadow
+    const termShadow = this.add.rectangle(
+      screenX + 4,
+      screenY + 4,
+      termWidth,
+      termHeight,
+      0x000000,
+      0.5
+    );
+    termShadow.setScrollFactor(0);
+    termShadow.setDepth(2025);
+    this.gitTerminalElements.push(termShadow);
+    
+    // Terminal background
+    const termBg = this.add.rectangle(
+      screenX,
+      screenY,
+      termWidth,
+      termHeight,
+      0x1e1e1e
+    );
+    termBg.setStrokeStyle(2, 0x007acc);
+    termBg.setScrollFactor(0);
+    termBg.setDepth(2026);
+    this.gitTerminalElements.push(termBg);
+    
+    // Terminal header bar
+    const termHeader = this.add.rectangle(
+      screenX,
+      screenY - termHeight / 2 + 20,
+      termWidth,
+      40,
+      0x252526
+    );
+    termHeader.setScrollFactor(0);
+    termHeader.setDepth(2027);
+    this.gitTerminalElements.push(termHeader);
+    
+    // Terminal title
+    const termTitle = this.add.text(
+      screenX - termWidth / 2 + 15,
+      screenY - termHeight / 2 + 20,
+      'TERMINAL',
+      {
+        fontSize: '12px',
+        fill: '#cccccc',
+        fontFamily: 'Courier New'
+      }
+    );
+    termTitle.setOrigin(0, 0.5);
+    termTitle.setScrollFactor(0);
+    termTitle.setDepth(2028);
+    this.gitTerminalElements.push(termTitle);
+    
+    // Terminal content area
+    const contentStartY = screenY - termHeight / 2 + 50;
+    const lineHeight = 18;
+    
+    // Show git status
+    const statusLines = [
+      '$ git status',
+      'On branch main',
+      'Changes not staged for commit:',
+      '  modified:   src/styles/button.css',
+      '',
+      'no changes added to commit (use "git add <file>..." to stage)'
+    ];
+    
+    this.terminalLines = [];
+    statusLines.forEach((line, i) => {
+      const lineText = this.add.text(
+        screenX - termWidth / 2 + 15,
+        contentStartY + i * lineHeight,
+        line,
+        {
+          fontSize: '13px',
+          fill: line.startsWith('$') ? '#4ec9b0' : line.includes('modified') ? '#ce9178' : '#cccccc',
+          fontFamily: 'Courier New'
+        }
+      );
+      lineText.setOrigin(0, 0);
+      lineText.setScrollFactor(0);
+      lineText.setDepth(2028);
+      this.gitTerminalElements.push(lineText);
+      this.terminalLines.push(lineText);
+    });
+    
+    // Command prompt
+    const promptY = contentStartY + statusLines.length * lineHeight + 20;
+    this.commandPrompt = this.add.text(
+      screenX - termWidth / 2 + 15,
+      promptY,
+      '$ ',
+      {
+        fontSize: '13px',
+        fill: '#4ec9b0',
+        fontFamily: 'Courier New'
+      }
+    );
+    this.commandPrompt.setOrigin(0, 0);
+    this.commandPrompt.setScrollFactor(0);
+    this.commandPrompt.setDepth(2028);
+    this.gitTerminalElements.push(this.commandPrompt);
+    
+    // Command input text
+    this.commandInput = this.add.text(
+      screenX - termWidth / 2 + 35,
+      promptY,
+      '',
+      {
+        fontSize: '13px',
+        fill: '#ffffff',
+        fontFamily: 'Courier New'
+      }
+    );
+    this.commandInput.setOrigin(0, 0);
+    this.commandInput.setScrollFactor(0);
+    this.commandInput.setDepth(2028);
+    this.gitTerminalElements.push(this.commandInput);
+    
+    // Cursor blink animation
+    this.commandCursor = this.add.text(
+      screenX - termWidth / 2 + 35,
+      promptY,
+      '_',
+      {
+        fontSize: '13px',
+        fill: '#ffffff',
+        fontFamily: 'Courier New'
+      }
+    );
+    this.commandCursor.setOrigin(0, 0);
+    this.commandCursor.setScrollFactor(0);
+    this.commandCursor.setDepth(2028);
+    this.gitTerminalElements.push(this.commandCursor);
+    
+    this.tweens.add({
+      targets: this.commandCursor,
+      alpha: 0,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+    
+    // Instructions
+    const instructionText = this.add.text(
+      screenX,
+      screenY + termHeight / 2 + 30,
+      'Type the git commands to commit your changes!',
+      {
+        fontSize: '14px',
+        fill: '#ffcc00',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        padding: { x: 10, y: 5 },
+        fontFamily: 'Arial'
+      }
+    );
+    instructionText.setOrigin(0.5);
+    instructionText.setScrollFactor(0);
+    instructionText.setDepth(2029);
+    this.gitTerminalElements.push(instructionText);
+    
+    // Set up keyboard input
+    this.setupGitTerminalInput();
+  }
+
+  /**
+   * Set up keyboard input for git terminal
+   */
+  setupGitTerminalInput() {
+    // Create a text input handler
+    this.gitInputHandler = (event) => {
+      if (!this.gitCommitActive) return;
+      
+      // Handle Enter key
+      if (event.key === 'Enter') {
+        this.executeGitCommand();
+        return;
+      }
+      
+      // Handle Backspace
+      if (event.key === 'Backspace') {
+        this.gitCommandBuffer = this.gitCommandBuffer.slice(0, -1);
+        this.updateCommandDisplay();
+        return;
+      }
+      
+      // Handle regular characters
+      if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+        this.gitCommandBuffer += event.key;
+        this.updateCommandDisplay();
+      }
+    };
+    
+    this.input.keyboard.on('keydown', this.gitInputHandler);
+  }
+
+  /**
+   * Update command display
+   */
+  updateCommandDisplay() {
+    if (this.commandInput) {
+      this.commandInput.setText(this.gitCommandBuffer);
+      // Update cursor position
+      const cursorX = GAME_CONFIG.width / 2 - 350 + 35 + this.gitCommandBuffer.length * 7.5;
+      if (this.commandCursor) {
+        this.commandCursor.setX(cursorX);
+      }
+    }
+  }
+
+  /**
+   * Execute git command
+   */
+  executeGitCommand() {
+    const command = this.gitCommandBuffer.trim().toLowerCase();
+    const screenX = GAME_CONFIG.width / 2;
+    const termWidth = 700;
+    const contentStartY = GAME_CONFIG.height / 2 - 200 + 50;
+    const lineHeight = 18;
+    
+    // Add command to terminal history
+    const commandLine = this.add.text(
+      screenX - termWidth / 2 + 15,
+      this.commandPrompt.y + lineHeight,
+      `$ ${this.gitCommandBuffer}`,
+      {
+        fontSize: '13px',
+        fill: '#4ec9b0',
+        fontFamily: 'Courier New'
+      }
+    );
+    commandLine.setOrigin(0, 0);
+    commandLine.setScrollFactor(0);
+    commandLine.setDepth(2028);
+    this.gitTerminalElements.push(commandLine);
+    
+    // Move prompt down
+    this.commandPrompt.setY(this.commandPrompt.y + lineHeight);
+    this.commandInput.setY(this.commandInput.y + lineHeight);
+    this.commandCursor.setY(this.commandCursor.y + lineHeight);
+    
+    // Process command based on step
+    if (this.gitStep === 'status' || this.gitStep === 'add') {
+      if (command === 'git add .' || command === 'git add src/styles/button.css' || command === 'git add button.css') {
+        // Show success
+        const output = this.add.text(
+          screenX - termWidth / 2 + 15,
+          this.commandPrompt.y + lineHeight,
+          'Changes staged for commit',
+          {
+            fontSize: '13px',
+            fill: '#6a9955',
+            fontFamily: 'Courier New'
+          }
+        );
+        output.setOrigin(0, 0);
+        output.setScrollFactor(0);
+        output.setDepth(2028);
+        this.gitTerminalElements.push(output);
+        
+        this.gitStep = 'commit';
+        this.commandPrompt.setY(this.commandPrompt.y + lineHeight * 2);
+        this.commandInput.setY(this.commandInput.y + lineHeight * 2);
+        this.commandCursor.setY(this.commandCursor.y + lineHeight * 2);
+        
+        // Update instruction
+        const instruction = this.gitTerminalElements.find(el => el.text && el.text.includes('Type the git'));
+        if (instruction) {
+          instruction.setText('Now commit with: git commit -m "your message"');
+        }
+      } else {
+        // Show error
+        const error = this.add.text(
+          screenX - termWidth / 2 + 15,
+          this.commandPrompt.y + lineHeight,
+          'Try: git add .  or  git add src/styles/button.css',
+          {
+            fontSize: '13px',
+            fill: '#f48771',
+            fontFamily: 'Courier New'
+          }
+        );
+        error.setOrigin(0, 0);
+        error.setScrollFactor(0);
+        error.setDepth(2028);
+        this.gitTerminalElements.push(error);
+        this.commandPrompt.setY(this.commandPrompt.y + lineHeight * 2);
+        this.commandInput.setY(this.commandInput.y + lineHeight * 2);
+        this.commandCursor.setY(this.commandCursor.y + lineHeight * 2);
+      }
+    } else if (this.gitStep === 'commit') {
+      if (command.startsWith('git commit -m')) {
+        // Extract message
+        const messageMatch = command.match(/git commit -m ["'](.+)["']/);
+        const commitMessage = messageMatch ? messageMatch[1] : 'fix: center button';
+        
+        // Show commit success
+        const output = this.add.text(
+          screenX - termWidth / 2 + 15,
+          this.commandPrompt.y + lineHeight,
+          `[main abc1234] ${commitMessage}`,
+          {
+            fontSize: '13px',
+            fill: '#6a9955',
+            fontFamily: 'Courier New'
+          }
+        );
+        output.setOrigin(0, 0);
+        output.setScrollFactor(0);
+        output.setDepth(2028);
+        this.gitTerminalElements.push(output);
+        
+        const output2 = this.add.text(
+          screenX - termWidth / 2 + 15,
+          this.commandPrompt.y + lineHeight * 2,
+          '1 file changed, 1 insertion(+)',
+          {
+            fontSize: '13px',
+            fill: '#6a9955',
+            fontFamily: 'Courier New'
+          }
+        );
+        output2.setOrigin(0, 0);
+        output2.setScrollFactor(0);
+        output2.setDepth(2028);
+        this.gitTerminalElements.push(output2);
+        
+        // Complete the quest
+        this.time.delayedCall(1500, () => {
+          this.completeCodeQuest();
+        });
+      } else {
+        // Show error
+        const error = this.add.text(
+          screenX - termWidth / 2 + 15,
+          this.commandPrompt.y + lineHeight,
+          'Try: git commit -m "your commit message"',
+          {
+            fontSize: '13px',
+            fill: '#f48771',
+            fontFamily: 'Courier New'
+          }
+        );
+        error.setOrigin(0, 0);
+        error.setScrollFactor(0);
+        error.setDepth(2028);
+        this.gitTerminalElements.push(error);
+        this.commandPrompt.setY(this.commandPrompt.y + lineHeight * 2);
+        this.commandInput.setY(this.commandInput.y + lineHeight * 2);
+        this.commandCursor.setY(this.commandCursor.y + lineHeight * 2);
+      }
+    }
+    
+    // Clear command buffer
+    this.gitCommandBuffer = '';
+    this.updateCommandDisplay();
   }
 
   /**
@@ -1354,15 +1769,27 @@ export default class InhanceScene extends Phaser.Scene {
   completeCodeQuest() {
     if (this.codingQuestCompleted) return;
     this.codingQuestCompleted = true;
+    this.gitCommitActive = false;
     
-    // Flash the button green
-    this.targetButton.setFillStyle(0x27ae60);
+    // Clean up git terminal
+    if (this.gitTerminalElements) {
+      this.gitTerminalElements.forEach(element => {
+        if (element && element.destroy) element.destroy();
+      });
+      this.gitTerminalElements = [];
+    }
     
-    // Show success message
+    // Remove git keyboard listener
+    if (this.gitInputHandler) {
+      this.input.keyboard.off('keydown', this.gitInputHandler);
+      this.gitInputHandler = null;
+    }
+    
+    // Show final success message
     const successText = this.add.text(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
-      '✓ PERFECTLY CENTERED!\n\n🎉 Quest Complete: CSS Master!\n+200 XP',
+      '✓ COMMIT SUCCESSFUL!\n\n🎉 Quest Complete: CSS Master!\n+200 XP',
       {
         fontSize: '24px',
         fill: '#00ff00',
@@ -1397,6 +1824,21 @@ export default class InhanceScene extends Phaser.Scene {
    */
   closeComputerView() {
     this.computerViewActive = false;
+    this.gitCommitActive = false;
+    
+    // Clean up git terminal
+    if (this.gitTerminalElements) {
+      this.gitTerminalElements.forEach(element => {
+        if (element && element.destroy) element.destroy();
+      });
+      this.gitTerminalElements = [];
+    }
+    
+    // Remove git keyboard listener
+    if (this.gitInputHandler) {
+      this.input.keyboard.off('keydown', this.gitInputHandler);
+      this.gitInputHandler = null;
+    }
     
     // Destroy all dev tools elements
     if (this.devElements) {
