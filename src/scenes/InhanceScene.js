@@ -71,6 +71,8 @@ export default class InhanceScene extends Phaser.Scene {
     this.computerViewActive = false;
     this.buttonCentered = false;
     this.gitCommitActive = false;
+    this.tomPostQuestDialogueActive = false;
+    this.tomFadedOut = false;
     
     // Store first desk position for computer interaction
     this.playerDeskPosition = { x: 250, y: GAME_CONFIG.height - 140 };
@@ -92,6 +94,11 @@ export default class InhanceScene extends Phaser.Scene {
     // Update Luna
     if (this.lunaGirl) {
       this.lunaGirl.update();
+      
+      // Make Luna follow player if enabled and not in computer view
+      if (this.lunaFollowEnabled && !this.computerViewActive) {
+        this.updateLunaFollowBehavior();
+      }
     }
     
     // Update NPCs
@@ -101,7 +108,14 @@ export default class InhanceScene extends Phaser.Scene {
     
     // Update dialogue manager
     if (this.dialogueManager) {
+      const wasDialogueActive = this.dialogueManager.isActive;
       this.dialogueManager.update();
+      
+      // Check if Tom's post-quest dialogue just completed
+      if (this.tomPostQuestDialogueActive && wasDialogueActive && !this.dialogueManager.isActive) {
+        this.tomPostQuestDialogueActive = false;
+        this.fadeOutTom();
+      }
     }
     
     // Check for NPC interactions
@@ -426,6 +440,69 @@ export default class InhanceScene extends Phaser.Scene {
     this.lunaGirl = new NPC(this, 100, groundY - 20, 'jojo_girl_idle', lunaData);
     this.lunaGirl.setDepth(lunaData.depth);
     this.lunaGirl.play('girl_idle_right');
+    
+    // Luna will follow the player
+    this.lunaFollowEnabled = true;
+  }
+
+  /**
+   * Update Luna's following behavior
+   */
+  updateLunaFollowBehavior() {
+    if (!this.lunaGirl || !this.player) return;
+    
+    // Calculate distance to player
+    const distance = Phaser.Math.Distance.Between(
+      this.lunaGirl.x,
+      this.lunaGirl.y,
+      this.player.x,
+      this.player.y
+    );
+    
+    const followDistance = 80; // Stay this far from player
+    const runDistance = 200; // Start running if further than this
+    
+    if (distance > followDistance) {
+      // Calculate direction to player
+      const angle = Phaser.Math.Angle.Between(
+        this.lunaGirl.x,
+        this.lunaGirl.y,
+        this.player.x,
+        this.player.y
+      );
+      
+      // Determine speed based on distance
+      const speed = 110;
+      
+      // Move towards player
+      this.lunaGirl.setVelocity(
+        Math.cos(angle) * speed,
+        0 // Keep Y velocity at 0 since we have gravity
+      );
+      
+      // Update animation based on direction and speed
+      const velocityX = this.lunaGirl.body.velocity.x;
+      
+      if (Math.abs(velocityX) > 5) {
+        const animKey = 'girl_walk';
+        const direction = velocityX > 0 ? 'right' : 'left';
+        const fullAnimKey = `${animKey}_${direction}`;
+        
+        if (this.lunaGirl.anims.currentAnim?.key !== fullAnimKey) {
+          this.lunaGirl.play(fullAnimKey);
+        }
+      }
+    } else {
+      // Stop moving when close enough
+      this.lunaGirl.setVelocityX(0);
+      
+      // Play idle animation if not already
+      if (!this.lunaGirl.anims.currentAnim?.key.includes('idle')) {
+        // Determine direction based on player position
+        const direction = this.player.x > this.lunaGirl.x ? 'right' : 'left';
+        this.lunaGirl.play(`girl_idle_${direction}`);
+      }
+    }
   }
 
   /**
@@ -517,6 +594,16 @@ export default class InhanceScene extends Phaser.Scene {
     const turnAroundDistance = 150; // Distance at which NPC turns to face player
     
     this.npcs.forEach((npc, index) => {
+      // Skip Tom if he has faded out
+      if (npc === this.tom && this.tomFadedOut) {
+        // Hide any existing interaction prompt
+        if (npc.interactionPrompt) {
+          npc.interactionPrompt.destroy();
+          npc.interactionPrompt = null;
+        }
+        return;
+      }
+      
       const distance = Phaser.Math.Distance.Between(
         this.player.x,
         this.player.y,
@@ -1811,12 +1898,39 @@ export default class InhanceScene extends Phaser.Scene {
       
       // Show Tom's reaction
       this.time.delayedCall(500, () => {
+        this.tomPostQuestDialogueActive = true;
         this.dialogueManager.startDialogue('Tom', [
-          "Nice, thanks man!",
-          "The button is perfectly centered now!",
-          "You're a CSS wizard! Thanks so much!"
+          "Nice! You're a CSS wizard! Thanks so much!",
+          "I guess it's knock off time now...",
+          "You should leave as well - traffic will get real bad pretty soon..."
         ]);
       });
+    });
+  }
+
+  /**
+   * Fade out Tom sprite after dialogue completes
+   */
+  fadeOutTom() {
+    if (!this.tom) return;
+    
+    // Hide any existing interaction prompt
+    if (this.tom.interactionPrompt) {
+      this.tom.interactionPrompt.destroy();
+      this.tom.interactionPrompt = null;
+    }
+    
+    // Create a fade out tween
+    this.tweens.add({
+      targets: this.tom,
+      alpha: 0,
+      duration: 4000, // 4 seconds fade
+      ease: 'Power2',
+      onComplete: () => {
+        // Hide Tom and mark as faded out
+        this.tom.setVisible(false);
+        this.tomFadedOut = true;
+      }
     });
   }
 
