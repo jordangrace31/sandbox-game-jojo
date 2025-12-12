@@ -27,10 +27,6 @@ export default class IntroScene extends Phaser.Scene {
     this.input.once('pointerdown', () => {
       this.startGame();
     });
-    
-    this.time.delayedCall(20000, () => {
-      this.startGame();
-    });
   }
 
   createSkyGradient() {

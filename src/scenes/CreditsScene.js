@@ -32,6 +32,11 @@ export default class CreditsScene extends Phaser.Scene {
       { text: 'Luna', size: '28px', color: '#CCCCCC', spacing: 30 },
       { text: 'Jordan', size: '28px', color: '#CCCCCC', spacing: 40 },
       { text: '', size: '24px', spacing: 30 },
+
+      { text: 'TESTING & FEEDBACK', size: '36px', color: '#FFFFFF', spacing: 50 },
+      { text: 'Kelsey', size: '28px', color: '#CCCCCC', spacing: 30 },
+      { text: 'Jordan', size: '28px', color: '#CCCCCC', spacing: 40 },
+      { text: '', size: '24px', spacing: 30 },
       
       // Music & Sound
       { text: 'MUSIC & SOUND', size: '36px', color: '#FFFFFF', spacing: 50 },

@@ -1605,7 +1605,7 @@ export default class InhanceScene extends Phaser.Scene {
     
     // Process command based on step
     if (this.gitStep === 'status' || this.gitStep === 'add') {
-      if (command === 'git add .' || command === 'git add src/styles/button.css' || command === 'git add button.css') {
+      if (command === 'git add .' || command === 'git add src/styles/poo-button.css' || command === 'git add poo-button.css') {
         // Show success
         const output = this.add.text(
           screenX - termWidth / 2 + 15,
@@ -1637,7 +1637,7 @@ export default class InhanceScene extends Phaser.Scene {
         const error = this.add.text(
           screenX - termWidth / 2 + 15,
           this.commandPrompt.y + lineHeight,
-          'Try: git add .  or  git add src/styles/button.css',
+          'Try: git add .  or  git add src/styles/poo-button.css',
           {
             fontSize: '13px',
             fill: '#f48771',

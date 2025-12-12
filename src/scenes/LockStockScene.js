@@ -167,7 +167,7 @@ export default class LockStockScene extends Phaser.Scene {
 
   returnToMainScene() {
     if (this.musicManager) {
-      this.musicManager.stop(1000);
+      this.musicManager.stop(900);
     }
     
     this.cameras.main.fadeOut(1000, 0, 0, 0);

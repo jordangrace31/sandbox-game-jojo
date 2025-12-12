@@ -51,6 +51,9 @@ export default class MainScene extends Phaser.Scene {
     this.lockStockX = 7000;
     this.inhanceX = 14300;
     
+    this.piepsieIsHappy = false;
+    this.piepsieBarkCooldown = false;
+    
     if (!this.registry.has('playerStats')) {
       this.registry.set('playerStats', {
         gold: 0,
@@ -1388,9 +1391,26 @@ export default class MainScene extends Phaser.Scene {
       if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail-happy') {
         this.piepsie.play('piepsie-tail-happy');
       }
+      
+      // Play bark sound when player enters proximity (with cooldown)
+      if (!this.piepsieIsHappy && !this.piepsieBarkCooldown) {
+        this.piepsieIsHappy = true;
+        this.sound.play('bark', { volume: 0.4 });
+        
+        // Set cooldown to prevent repeated barking
+        this.piepsieBarkCooldown = true;
+        this.time.delayedCall(5000, () => {
+          this.piepsieBarkCooldown = false;
+        });
+      }
     } else {
       if (this.piepsie.anims.currentAnim?.key !== 'piepsie-tail') {
         this.piepsie.play('piepsie-tail');
+      }
+      
+      // Reset happy state when player leaves
+      if (this.piepsieIsHappy) {
+        this.piepsieIsHappy = false;
       }
     }
   }

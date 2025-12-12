@@ -197,6 +197,8 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.audio('hells_bells', 'assets/audio/HellsBells.m4a');
     this.load.audio('lock_stock', 'assets/audio/TheWayIAre.m4a');
     this.load.audio('shell', 'assets/audio/Shell-trimmed.mp3');
+
+    this.load.audio('bark', 'assets/audio/piepsie-bark.mp3');
   }
 }
 
