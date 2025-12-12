@@ -960,7 +960,7 @@ export default class InhanceScene extends Phaser.Scene {
     this.devElements.push(headline);
     
     // Subtext
-    const subtext = this.add.text(previewX, pageContentY - 45, 'The best solution for your yard', {
+    const subtext = this.add.text(previewX, pageContentY - 45, 'The best solution by THE YARD GUY', {
       fontSize: '14px',
       fill: '#7f8c8d',
       fontFamily: 'Arial'
@@ -1020,7 +1020,7 @@ export default class InhanceScene extends Phaser.Scene {
     this.instructionText = this.add.text(
       screenX,
       screenY + screenHeight / 2 + 80,
-      'Use [1-9] to set margin-left | [↑↓] fine adjust | [TAB] change property | [ESC] close',
+      'Use [↑↓] to adjust | [TAB] change property | [ESC] close',
       {
         fontSize: '18px',
         fill: '#00ff00',
@@ -1251,7 +1251,7 @@ export default class InhanceScene extends Phaser.Scene {
   updateInstructionText() {
     if (this.instructionText) {
       this.instructionText.setText(
-        `Use [1-9] to set margin-${this.selectedProperty} | [↑↓] fine adjust | [TAB] change property | [ESC] close`
+        `Use [↑↓] to adjust margin-${this.selectedProperty} | [TAB] change property | [ESC] close`
       );
     }
   }

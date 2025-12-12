@@ -24,7 +24,8 @@ export default class CreditsScene extends Phaser.Scene {
       // Game Development
       { text: 'GAME DEVELOPMENT', size: '36px', color: '#FFFFFF', spacing: 50 },
       { text: 'Created by', size: '24px', color: '#CCCCCC', spacing: 30 },
-      { text: 'Luna & Jordan', size: '32px', color: '#FFFFFF', spacing: 40 },
+      { text: 'Luna', size: '28px', color: '#FFFFFF', spacing: 30 },
+      { text: 'Jordan', size: '28px', color: '#FFFFFF', spacing: 40 },
       { text: '', size: '24px', spacing: 30 },
       
       // Art & Design
@@ -34,13 +35,13 @@ export default class CreditsScene extends Phaser.Scene {
       { text: '', size: '24px', spacing: 30 },
 
       { text: 'TESTING & FEEDBACK', size: '36px', color: '#FFFFFF', spacing: 50 },
-      { text: 'Kelsey', size: '28px', color: '#CCCCCC', spacing: 30 },
-      { text: 'Jordan', size: '28px', color: '#CCCCCC', spacing: 40 },
+      { text: 'Luna', size: '28px', color: '#CCCCCC', spacing: 30 },
+      { text: 'Kelsey', size: '28px', color: '#CCCCCC', spacing: 40 },
       { text: '', size: '24px', spacing: 30 },
       
       // Music & Sound
       { text: 'MUSIC & SOUND', size: '36px', color: '#FFFFFF', spacing: 50 },
-      { text: 'Background Music', size: '24px', color: '#CCCCCC', spacing: 30 },
+      { text: 'Background Music', size: '24px', color: '#CCCCCC', spacing: 40 },
       { text: 'L. Dre - Dear Katara', size: '28px', color: '#CCCCCC', spacing: 40 },
       { text: 'ACDC - Hells Bells', size: '28px', color: '#CCCCCC', spacing: 40 },
       { text: 'Timberland - The Way I Are', size: '28px', color: '#CCCCCC', spacing: 40 },
@@ -109,7 +110,7 @@ export default class CreditsScene extends Phaser.Scene {
     });
     
     // Scroll credits upward
-    const scrollDuration = 30000; // 30 seconds total
+    const scrollDuration = 40000; // 40 seconds total
     const endY = -this.totalHeight - GAME_CONFIG.height;
     
     this.tweens.add({
